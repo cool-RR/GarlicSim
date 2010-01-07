@@ -16,9 +16,13 @@ import garlicsim
 
 __all__ = ["Tree", "TreeError"]
 
+class OutOfUndo(Exception): pass #tododoc
+class OutOfRedo(Exception): pass #tododoc
+
 class TreeError(Exception):
     '''An exception related to the Tree class.'''
     pass
+
 
 class Tree(object):
     '''
@@ -40,7 +44,7 @@ class Tree(object):
     Each node in the tree may have a parent, or may not, in which case it will
     also be called a root and be a member of tree.roots.
     '''
-    def __init__(self):
+    def __init__(self, undo_buffer_size=None):
         
         self.nodes = []
         '''List of nodes that belong to the tree.'''
@@ -56,7 +60,35 @@ class Tree(object):
         require reading from the tree in the same time that sync_crunchers could
         potentially be writing to it.
         '''
-
+        
+        self.undo_buffer = [] if undo_buffer_size else None
+            
+        self.redo_buffer = [] if undo_buffer_size else None
+        # make lifo crap. remember its bool should be always True.
+        # maybe should have `.start_group()` and `.end_group()`
+        
+        
+    def undo(self):#tododoc
+        if not self.undo_buffer:
+            raise TreeError()#tododoc
+        try:
+            action = self.undo_buffer.pop()
+            return action()
+        except IndexError:
+            raise OutOfUndo
+    
+    def redo(self):#tododoc
+        if not self.redo_buffer:
+            raise TreeError()#tododoc
+        try:
+            action = self.redo_buffer.pop()
+            return action()
+        except IndexError:
+            raise OutOfRedo
+    
+    def clear_redo_buffer(self):#tododoc
+        if self.redo_buffer:
+            del self.redo_buffer[:]
         
     def fork_to_edit(self, template_node):
         '''
@@ -156,8 +188,9 @@ tree while specifying a template_node.''')
     
     def delete_node_selection(self, node_selection, stitch=False):#tododoc
         node_selection.compact()
-        for node_range in node_selection.ranges:
-            self.delete_node_range(node_range, stitch=stitch)
+        with self.undo_buffer.group:
+            for node_range in node_selection.ranges:
+                self.delete_node_range(node_range, stitch=stitch)
     
     def delete_node_range(self, node_range, stitch=False):#tododoc
         
@@ -166,13 +199,12 @@ tree while specifying a template_node.''')
         
         end_node = node_range.end if isinstance(node_range.end, Node) \
                      else node_range.end[-1]
-        
-        if start_node in self.roots:
-            self.roots.remove(start_node)
                         
         big_parent = start_node.parent
         if big_parent is not None:
             big_parent.children.remove(start_node)
+        else:
+            self.roots.remove(start_node)
         
         outside_children = node_range.get_outside_children()
             
@@ -195,10 +227,16 @@ tree while specifying a template_node.''')
                     
             
         parent_to_use = big_parent if (stitch is True) else None
-        for node in outside_children:
+        for node in outside_children.itervalues():
             node.parent = parent_to_use
             if parent_to_use is None:
                 self.roots.append(node)
+                
+        if self.undo_buffer:
+            def my_undo():
+                
+                pass
+            self.undo_buffer.append(my_undo)
             
         
     
@@ -220,6 +258,8 @@ tree while specifying a template_node.''')
                    hex(id(self))
                )
     
+    def organize_blocks(self):
+        pass
     
     def __getstate__(self):
         my_dict = dict(self.__dict__)

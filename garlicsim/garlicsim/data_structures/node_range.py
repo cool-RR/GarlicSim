@@ -40,12 +40,14 @@ class NodeRange(object):
         
         return NodeRange(new_start, new_end)
     
-    def get_outside_children(self):
-        outside_children = []
+    def get_outside_children(self): # is dict from children to parents!
+        outside_children = {}
         for thing in self.iterate_blockwise():
             candidate = thing if isinstance(thing, Node) else thing[-1]
-            outside_children += [child for child in candidate.children if child
-                                 not in self]
+            for child in candidate.children:
+                if child not in self:
+                    outside_children[child] = candidate
+        
         return outside_children
             
         
