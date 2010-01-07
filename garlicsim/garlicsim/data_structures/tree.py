@@ -235,6 +235,16 @@ tree while specifying a template_node.''')
         if self.undo_buffer:
             def my_undo():
                 
+                for (child, parent) in outside_children.iteritems():
+                    child.parent = parent
+                    
+                                
+                
+                if big_parent:
+                    big_parent.children.append(start_node)
+                else:
+                    self.roots.append(start_node)
+                
                 pass
             self.undo_buffer.append(my_undo)
             
