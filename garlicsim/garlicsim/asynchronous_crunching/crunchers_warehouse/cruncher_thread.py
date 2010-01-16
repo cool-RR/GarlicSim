@@ -170,6 +170,6 @@ class CruncherThread(threading.Thread):
         self.order_queue.put(profile)
         
     is_alive = threading.Thread.isAlive
-    '''Crutch for Python 2.5 and below.'''
+    '''Crutch for Python 2.5.'''
     
 

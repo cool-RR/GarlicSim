@@ -116,6 +116,9 @@ class ApplicationWindow(wx.Frame):
         ######################################
         
         self.Show()
+        
+        from garlicsim_wx.general_misc.async_import import async_import
+        async_import(['garlicsim.bundled.simulation_packages.particles'])
 
     def add_gui_project(self, gui_project):
         '''Add a gui project, opening a new tab for it in the notebook.'''
