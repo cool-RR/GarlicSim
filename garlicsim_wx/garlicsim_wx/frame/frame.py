@@ -145,7 +145,8 @@ class Frame(wx.Frame):
         
         self.background_timer = thread_timer.ThreadTimer(self)
         self.background_timer.start(150)
-        self.Bind(thread_timer.EVT_THREAD_TIMER, self.sync_crunchers)
+        self.Bind(thread_timer.EVT_THREAD_TIMER, self.sync_crunchers,
+                  self.background_timer)
 
         ######################################
         
@@ -293,11 +294,11 @@ class Frame(wx.Frame):
         self.shell.aui_pane_info\
             .Right().Row(0)\
             .BestSize(400, 600)
-        """
+        
         self.state_repr_shower = workspace_widgets['StateReprShower'](self)
         self.state_repr_shower.aui_pane_info\
             .BestSize(300, 300)
-        """ 
+        
         self.aui_manager.Update()
         
         """

@@ -100,8 +100,8 @@ class GuiProject(object):
         self.timer_for_playing = thread_timer.ThreadTimer(self.frame)
         '''Contains the wx.Timer object used when playing the simulation.'''
         
-        self.frame.Bind(thread_timer.EVT_THREAD_TIMER, self.__play_next)
-        # use threadtimer? should have id or something
+        self.frame.Bind(thread_timer.EVT_THREAD_TIMER, self.__play_next,
+                        self.timer_for_playing)
 
         self.defacto_playing_speed = 4
         self.official_playing_speed = 4
@@ -313,7 +313,13 @@ class GuiProject(object):
             both_nodes = (both_nodes[1], both_nodes[0])
                 
         new_node = both_nodes[0]
-        assert new_node
+        
+        if new_node is None:
+            # This is for dealing with this edge case:
+            assert both_nodes[1].state.clock == desired_simulation_time
+            # Happens when moving to start of path while playing.
+            new_node = both_nodes[1]
+            
 
         self.real_time_krap = current_real_time
 

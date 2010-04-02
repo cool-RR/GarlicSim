@@ -9,6 +9,8 @@ info.
 # parameters `id` or `source` for events that come from ThreadTimer.
 '''
 # todo: daemonize?
+# todo: kickass idea: make all timers use one thread that will sleep smartly
+# to send all events correctly.
 
 
 import threading
@@ -27,14 +29,19 @@ class ThreadTimer(object):
    busy.
    '''
    n = 0
-   def __init__(self, parent): # should get id?
+   def __init__(self, parent):
       self.parent = parent
       ThreadTimer.n += 1
-      thread_name = "ThreadTimer Thread no. " + str(self.n)
-      self.thread = Thread(name=thread_name)
-      self.thread.parent = self
+      self.wx_id = wx.NewId()
+      self.__init_thread()
       self.alive = False
 
+   def __init_thread(self):
+      thread_name = ''.join(('Thread used by ThreadTimer no. ', str(self.n)))
+      self.thread = Thread(name=thread_name)
+      # Overwriting previous thread, so it'll get garbage-collected, hopefully
+      self.thread.parent = self
+   
    def start(self, interval):
       '''Start the timer.'''
       self.interval = interval
@@ -44,6 +51,13 @@ class ThreadTimer(object):
    def stop(self):
       '''Stop the timer.'''
       self.alive = False
+      self.__init_thread()
+   
+   Start = start
+   Stop = stop
+      
+   def GetId(self):
+      return self.wx_id
 
       
 class Thread(threading.Thread):
@@ -56,7 +70,7 @@ class Thread(threading.Thread):
       sleep()
       try:
          while self.parent.alive:
-            event = wx.PyEvent()
+            event = wx.PyEvent(self.parent.wx_id)
             event.SetEventType(wxEVT_THREAD_TIMER)
             wx.PostEvent(self.parent.parent, event)
             sleep()
