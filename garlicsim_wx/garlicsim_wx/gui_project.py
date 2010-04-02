@@ -294,7 +294,6 @@ class GuiProject(object):
         
         This method is called repeatedly when playing the simulation.
         '''
-        print('called')
         if self.is_playing is False: return
 
         current_real_time = time.time()

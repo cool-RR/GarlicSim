@@ -20,7 +20,9 @@ images_package = __images_package.__name__
 
 
 class PlaybackControls(wx.Panel, WorkspaceWidget):
-    #DoGetBestSize = lambda self: wx.Size(184, 128)
+    # todo: when pressing button, should check the button image. if it wasn't
+    # updated because of some bug, try to do the screen-displayed
+    # functionality.
     def __init__(self, frame):
         wx.Panel.__init__(self, frame, -1, size=(184, 128),
                           style=wx.SUNKEN_BORDER)
