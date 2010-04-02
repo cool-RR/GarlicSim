@@ -238,7 +238,6 @@ class Frame(wx.Frame):
 
     def exit(self, e=None):
         '''Close the application window.'''
-        print('Frame.exit called.')
         if self.gui_project:
             self.gui_project.stop_playing()
         self.aui_manager.UnInit()
@@ -294,11 +293,11 @@ class Frame(wx.Frame):
         self.shell.aui_pane_info\
             .Right().Row(0)\
             .BestSize(400, 600)
-            
+        """
         self.state_repr_shower = workspace_widgets['StateReprShower'](self)
         self.state_repr_shower.aui_pane_info\
             .BestSize(300, 300)
-            
+        """ 
         self.aui_manager.Update()
         
         """
@@ -335,6 +334,7 @@ class Frame(wx.Frame):
         Returns the total amount of nodes that were added to each gui project's
         tree.
         '''
+        print(vars(e) if e else e)
         nodes_added = self.gui_project.sync_crunchers() \
                     if self.gui_project else 0
         

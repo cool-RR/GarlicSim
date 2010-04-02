@@ -4,8 +4,12 @@
 '''
 This module defines the ThreadTimer object. See its documentation for more
 info.
+
+# todo: I think there a little problem currently, that we can't use Bind's
+# parameters `id` or `source` for events that come from ThreadTimer.
 '''
 # todo: daemonize?
+
 
 import threading
 import time

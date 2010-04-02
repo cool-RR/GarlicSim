@@ -72,14 +72,14 @@ class GuiProject(object):
         
 
         ### Choosing a Cruncher class: ########################################
-        
+        """
         if self.project.simpack_grokker.history_dependent is False and \
            self.project.simpack_grokker.Meta.force_cruncher is None and \
            'CruncherProcess' in crunchers:
             
             self.project.crunching_manager.Cruncher = \
                 crunchers['CruncherProcess']
-        
+        """
         #######################################################################
             
         self.path = path
@@ -97,16 +97,16 @@ class GuiProject(object):
         '''
         self.default_buffer = 100 # Should be a mechanism for setting that
 
-        self.timer_for_playing = wx.Timer(self.frame)
+        self.timer_for_playing = thread_timer.ThreadTimer(self.frame)
         '''Contains the wx.Timer object used when playing the simulation.'''
         
-        
-        self.frame.Bind(wx.EVT_TIMER, self.__play_next, self.timer_for_playing)
+        self.frame.Bind(thread_timer.EVT_THREAD_TIMER, self.__play_next)
         # use threadtimer? should have id or something
 
         self.defacto_playing_speed = 4
         self.official_playing_speed = 4
         self.standard_playing_speed = 4
+        # todo: better naming scheme for these?
         
         self.real_time_krap = None
         self.simulation_time_krap = None 
@@ -294,6 +294,7 @@ class GuiProject(object):
         
         This method is called repeatedly when playing the simulation.
         '''
+        print('called')
         if self.is_playing is False: return
 
         current_real_time = time.time()
