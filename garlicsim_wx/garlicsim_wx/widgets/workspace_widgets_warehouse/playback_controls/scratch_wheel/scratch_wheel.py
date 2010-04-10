@@ -42,7 +42,7 @@ def expanded_angle_to_pos(angle):
 #    return (1 + math.cos(-angle)) / 2
 
 
-class ScratchWheel(wx.Panel):
+class ScratchWheel(wx.PyPanel):
     # todo: This shit needs to get redrawed often enough to see the wheel move
     # when playing
     # todo: Add simple motion blur when moving fast.
@@ -53,7 +53,7 @@ class ScratchWheel(wx.Panel):
         else:
             kwargs['style'] = wx.SUNKEN_BORDER
             
-        wx.Panel.__init__(self, parent, *args, **kwargs)
+        wx.PyPanel.__init__(self, parent, *args, **kwargs)
         
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_SIZE, self.on_size)
@@ -116,6 +116,7 @@ class ScratchWheel(wx.Panel):
         
         self.recalculation_flag = False
         
+        '''
         self.needs_recalculation_emitter = \
             self.gui_project.emitter_system.make_emitter(
                 inputs=(
@@ -128,9 +129,12 @@ class ScratchWheel(wx.Panel):
                     # bitmap it'll be wasteful to refresh.
                 )
             )
-        
+              
         
         self.needs_recalculation_emitter.emit()
+        '''
+        self._last_tracked_pseudoclock = 0
+        self._recalculate()
 
         
     def get_current_angle(self):
@@ -330,3 +334,12 @@ class ScratchWheel(wx.Panel):
     def on_idle(self, event): # todo: kill this
         if self.current_motion_blur_bitmap != images.get_blurred_gear_image(0):
             self.Refresh()
+    
+    def on_internal_idle(self):
+        pseudoclock = self.gui_project.simulation_time_krap
+        if self._last_tracked_pseudoclock != pseudoclock:
+            self._last_tracked_pseudoclock = pseudoclock
+            self.recalculation_flag = True
+            self.Refresh()
+    
+    OnInternalIdle = on_internal_idle
