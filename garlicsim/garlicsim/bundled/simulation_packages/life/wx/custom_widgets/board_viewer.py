@@ -55,7 +55,7 @@ class BoardViewer(scrolled.ScrolledPanel,
 
     def set_board(self, board):
         '''Set the board to be displayed.'''
-        if board != self.board:
+        if board is not self.board:
             self.board = board
             self.redraw_needed_flag = True
             self.Refresh()
@@ -117,8 +117,10 @@ class BoardViewer(scrolled.ScrolledPanel,
         
         event.Skip()
         
-        dc = wx.BufferedPaintDC(self, self._buffer_bitmap)
+        dc = wx.PaintDC(self)
 
+        dc.DrawBitmapPoint(self._buffer_bitmap, self.CalcScrolledPosition((0, 0)))
+        
         dc.Destroy()
         
         (w, h) = self._get_size_from_board()
