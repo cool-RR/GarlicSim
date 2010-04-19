@@ -354,6 +354,11 @@ class Frame(wx.Frame):
             )
             #.NotebookPage(notebook_id, i)\
             self.big_widgets.append(big_widget)
+        
+
+        (n,) = self.aui_manager.GetNotebooks()
+        np=self.aui_manager.GetPane(n)
+        np.Float()
             
         self.aui_manager.Update()
         
