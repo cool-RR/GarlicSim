@@ -302,6 +302,18 @@ class Frame(wx.Frame):
             .CloseButton(False)
         )
         
+        panel = wx.Panel(self)
+        self.aui_manager.AddPane(
+            panel,
+            aui.AuiPaneInfo()\
+            .BestSize(300, 300)\
+            .Center()\
+            .Caption('')\
+            .CaptionVisible(False)\
+            .Floatable(False)\
+            .CloseButton(False)\
+            .NotebookDockable(False)
+        )
         
         self.state_repr_viewer = workspace_widgets.StateReprViewer(self)
         self.aui_manager.AddPane(
@@ -309,9 +321,9 @@ class Frame(wx.Frame):
             aui.AuiPaneInfo()\
             .BestSize(300, 300)\
             .MaximizeButton(True)\
-            .Center()\
+            .Float()\
             .Caption(self.state_repr_viewer.get_uppercase_name())
-            .Floatable(False)\
+            #.Floatable(False)\
             .CloseButton(False)
         )
         
@@ -334,9 +346,9 @@ class Frame(wx.Frame):
                 aui.AuiPaneInfo()\
                 .BestSize(300, 300)\
                 .MaximizeButton(True)\
-                .Center()\
+                #.Center()\
                 .Caption(big_widget.get_uppercase_name())\
-                .Floatable(False)\
+                #.Floatable(False)\
                 .CloseButton(False),
                 target=self.state_repr_viewer.get_aui_pane_info()
             )
