@@ -14,7 +14,7 @@ from garlicsim_wx.general_misc.third_party import aui
 from garlicsim_wx.general_misc import thread_timer
 from garlicsim_wx.general_misc.flag_raiser import FlagRaiser
 from garlicsim_wx.general_misc import emitters
-from garlicsim_wx.widgets.general_misc import Knob
+from garlicsim_wx.widgets.general_misc import Knob, FocuslessBitmapButton
 
 import garlicsim, garlicsim_wx
 from garlicsim_wx.widgets import WorkspaceWidget
@@ -151,27 +151,27 @@ class PlaybackControls(wx.Panel, WorkspaceWidget):
         h_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
                            
-        self.button_to_start = wx.BitmapButton(
+        self.button_to_start = FocuslessBitmapButton(
             self.inner_panel, -1, bitmaps_dict['to_start'], size=(31, 50)
         )
         '''Button for moving to start of path.'''
         
-        self.button_previous_node = wx.BitmapButton(
+        self.button_previous_node = FocuslessBitmapButton(
             self.inner_panel, -1, bitmaps_dict['previous_node'], size=(31, 50)
         )
         '''Button for moving to previous node.'''
         
-        self.button_center_button = wx.BitmapButton(
+        self.button_center_button = FocuslessBitmapButton(
             self.inner_panel, -1, bitmaps_dict['play'], size=(60, 50)
         )
         '''Button for playing/pausing playback, and finalizing edited node.'''
         
-        self.button_next_node= wx.BitmapButton(
+        self.button_next_node= FocuslessBitmapButton(
             self.inner_panel, -1, bitmaps_dict['next_node'], size=(31, 50)
         )
         '''Button for moving to next node.'''
         
-        self.button_to_end = wx.BitmapButton(
+        self.button_to_end = FocuslessBitmapButton(
             self.inner_panel, -1, bitmaps_dict['to_end'], size=(31, 50)
         )
         '''Button for moving to end of path.'''
