@@ -92,6 +92,7 @@ class QuadBoard(Board):
         pass#tododoc
     
     def __init__(self, kids):
+        assert isinstance(kids, list) # Important for caching
         assert len(kids) == 4
         self.kids = kids
         
@@ -148,23 +149,34 @@ class QuadBoard(Board):
                 
                 if level >= 3:
                     
-                    self.sub_tri_board = TriBoard(
-                        kids[0].sub_quad_board,
-                        self.north_sub_quad_board.sub_quad_board,
-                        kids[1].sub_quad_board,
-                        self.west_sub_quad_board.sub_quad_board,
-                        self.sub_quad_board.sub_quad_board,
-                        self.east_sub_quad_board.sub_quad_board,
-                        kids[2].sub_quad_board,
-                        self.south_sub_quad_board.sub_quad_board,
-                        kids[3].sub_quad_board
-                    )
+                    parents_for_sub_tri_board = [
+                        kids[0],
+                        self.north_sub_quad_board,
+                        kids[1],
+                        self.west_sub_quad_board,
+                        self.sub_quad_board,
+                        self.east_sub_quad_board,
+                        kids[2],
+                        self.south_sub_quad_board,
+                        kids[3]
+                    ]
+                    
+                    self.sub_tri_board = \
+                        TriBoard.create_from_parents(parents_for_sub_tri_board)
         
-    
+    @caching.cache
+    def get_future_sub_tri_board(self, n):
+        assert 0 <= n <= 2 ** (self.level - 3)
+        
 
 class TriBoard(Board):
 
+    @staticmethod
+    def create_from_parents(parents):
+        return TriBoard([parent.sub_quad_board for parent in parents])
+    
     def __init__(self, kids):
+        assert isinstance(kids, list) # Important for caching
         assert len(kids) == 9
         self.kids = kids
         
