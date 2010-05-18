@@ -149,7 +149,7 @@ class QuadBoard(Board):
                 
                 if level >= 3:
                     
-                    parents_for_sub_tri_board = [
+                    self.extended_kids = [
                         kids[0],
                         self.north_sub_quad_board,
                         kids[1],
@@ -162,12 +162,27 @@ class QuadBoard(Board):
                     ]
                     
                     self.sub_tri_board = \
-                        TriBoard.create_from_parents(parents_for_sub_tri_board)
+                        TriBoard.create_from_parents(self.extended_kids)
         
+                    
     @caching.cache
     def get_future_sub_tri_board(self, n):
+        assert self.level >= 3
         assert 0 <= n <= 2 ** (self.level - 3)
-        
+        return TriBoard([extended_kid.get_future_sub_quad_board(n) for extended_kid
+                         in self.extended_kids])
+    
+            
+    @caching.cache
+    def get_future_sub_quad_board(self, n):
+        if self.level >= 3:
+            assert 0 <= n <= 2 ** (self.level - 2)
+            return self.sub_tri_board.get_future_sub_quad_board(n)
+        else:
+            assert self.level == 2
+            
+    
+    
 
 class TriBoard(Board):
 
@@ -212,3 +227,10 @@ class TriBoard(Board):
                 )
         )
     
+    
+            
+    @caching.cache
+    def get_future_sub_quad_board(self, n):
+        assert self.level >= 2
+        assert 0 <= n <= 2 ** (self.level - 2)
+        return self.sub_tri_board.get_future_sub_quad_board(n)
