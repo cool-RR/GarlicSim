@@ -1,6 +1,6 @@
 
 import random
-
+import itertools
 
 from garlicsim.general_misc.third_party import abc
 from garlicsim.general_misc import caching
@@ -11,78 +11,49 @@ import garlicsim.data_structures
 
 
 class State(garlicsim.data_structures.State):
-    # This is your State subclass. Your state objects should contain all the
-    # information there is about a moment of time in your simulation.
     
-    def __init__(self):
-        pass
-    
-    
-    def step(self):
-        # This function is the heart of your simpack. What it does is take an
-        # existing world state, and output the next world state.
-        #
-        # This is where all the crunching gets done. This function defines the
-        # laws of your simulation world.
-        # 
-        # The step function is one of the very few things that your simpack
-        # **must** define. Almost all of the other definitions are optional.
-        pass
-    
-        
+    """
     @staticmethod
-    def create_root():
-        # In this function you create a root state. This usually becomes the
-        # first state in your simulation. You can make this function do
-        # something simple: For example, if you're simulating Life, you can make
-        # this function create an empty board.
-        #
-        # This function may take arguments, if you wish, to be used in making
-        # the state. For example, in a Life simulation you may want to specify
-        # the width and height of the board using arguments to this function.
-        #
-        # This function returns the newly-created state.
-        pass
-
+    def create_diehard(width=45, height=25):
+        state = State()
+        state.board = Board.create_diehard(width, height)
+        return state
+    """
     
     @staticmethod
-    def create_messy_root():
-        # In this function you create a messy root state. This usually becomes the
-        # first state in your simulation. 
-        #
-        # Why messy? Because sometimes you want to have fun in your simulations.
-        # You want to create a world where there's a lot of mess, with many
-        # objects interacting with each other. This is a good way to test-drive
-        # your simulation.
-        #
-        # This function may take arguments, if you wish, to be used in making
-        # the state. For example, in a Life simulation you may want to specify
-        # the width and height of the board using arguments to this function.
-        #
-        # This function returns the newly-created state.
-        pass
+    def create_root(level=4, fill=False):
+        return State(QuadBoard.create_root(level, fill))
+    
+    
+    @staticmethod
+    def create_messy_root(level=4, fill=False):
+        return State(QuadBoard.create_messy_root(level))
                                  
     
-    # def step_generator(self):
-    #     yield None
-    #     pass
-    #
-    # Do you want to use a step generator as your step function? If so, you may
-    # uncomment the above and fill it in, and it will be used instead of the
-    # normal step function.
-    # 
-    # A step generator is similar to a regular step function: it takes a
-    # starting state, and computes the next state. But it doesn't `return` it,
-    # it `yield`s it. And then it doesn't exit, it just keeps on crunching and
-    # yielding more states one by one.
-    # 
-    # A step generator is useful when you want to set up some environment and/or
-    # variables when you do your crunching. It can help you save resources,
-    # because you won't have to do all that initialization every time garlicsim
-    # computes a step.
-    #
-    # (You may write your step generator to terminate at some point or to never
-    # terminate-- Both ways are handled by garlicsim.)
+    def __init__(self, board):
+        garlicsim.data_structures.State.__init__(self)
+        self.board = board
+        
+    
+    def step(self):
+        try:
+            next_board = self.board.get_next()
+        except NotEnoughInformation:
+            next_board = self.board.get_bloated().get_next()
+        return State(next_board)
+
+    
+    def __repr__(self):
+        return self.board.__repr__()
+    
+    
+    def __eq__(self, other):
+        return isinstance(other, State) and self.board == other.board
+
+    
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     
     
 class NotEnoughInformation(garlicsim.misc.SmartException):
@@ -91,7 +62,7 @@ class NotEnoughInformation(garlicsim.misc.SmartException):
 class CachedAbstractType(caching.CachedType, abc.ABCMeta):
     pass
 
-class Board(object):
+class Board(garlicsim.misc.Persistent):
     __metaclass__ = CachedAbstractType
     
     @abc.abstractmethod
@@ -111,26 +82,35 @@ class Board(object):
         repr_row = lambda y: ''.join(repr_cell(x, y) for x in xrange(self.length))
         return '\n'.join(repr_row(y) for y in xrange(self.length))
         
-        """
-        return '<%s of level %s with %s cells at %s>' % \
-               (
-                   misc_tools.shorten_class_address(
-                       self.__class__.__module__,
-                       self.__class__.__name__
-                   ),
-                   self.level,
-                   self.length ** 2,
-                   hex(id(self))
-               )
-        """
     
+    def __eq__(self, other):
+        if not isinstance(other, Board):
+            return NotImplemented
+        return self.length == other.length and \
+               all((x == y for (x, y) in itertools.izip(self.kids, other.kids)))
 
+    
+    def __ne__(self, other):
+        return not self.__eq__(other)
+    
+    
+    
+# tododoc: probably change True/False to Alive/Dead
     
 class QuadBoard(Board):
 
     @staticmethod
-    def create_root(level):
-        pass#tododoc
+    def create_root(level, fill=None): # todo: make right
+        assert isinstance(fill, bool)
+        if level == 0:
+            return fill
+        else:
+            return QuadBoard(
+                tuple(
+                    QuadBoard.create_root(level - 1, fill) for i in range(4)
+                )
+            )
+        
     
     @staticmethod
     def create_messy_root(level):
@@ -225,12 +205,51 @@ class QuadBoard(Board):
             assert self.level >= 2
             return kid.get(x_mod, y_mod)
 
+    
+    def get_bloated(self):
+        
+        empty_smaller_quad_board = QuadBoard.create_root(self.level - 1)
+        
+        return QuadBoard((
+            
+            QuadBoard((
+                empty_smaller_quad_board,
+                empty_smaller_quad_board,
+                empty_smaller_quad_board,
+                self.kids[0]
+                )),
+            
+            QuadBoard((
+                empty_smaller_quad_board,
+                empty_smaller_quad_board,
+                self.kids[1],
+                empty_smaller_quad_board
+                )),
+            
+            QuadBoard((
+                empty_smaller_quad_board,
+                self.kids[2],
+                empty_smaller_quad_board,
+                empty_smaller_quad_board
+                )),
+            
+            QuadBoard((
+                self.kids[3],
+                empty_smaller_quad_board,
+                empty_smaller_quad_board,
+                empty_smaller_quad_board
+                ))
+            
+        ))
+        
+        
     @caching.cache
     def is_empty(self):
         if self.level == 1:
             return all((kid is False for kid in self.kids))
         else: # self.level >= 2
             return all((kid.is_empty() for kid in self.kids))
+
         
     @caching.cache    
     def get_next(self):
@@ -243,11 +262,14 @@ class QuadBoard(Board):
                     in border_grand_kids)):
             
             raise NotEnoughInformation
-        
+                
         next_sub_quad_board = self.get_future_sub_quad_board(1)
         
-        raise NotImplementedError
+        return next_sub_quad_board.get_bloated()
         
+        
+
+    
     @caching.cache
     def get_future_sub_tri_board(self, n):
         assert self.level >= 3

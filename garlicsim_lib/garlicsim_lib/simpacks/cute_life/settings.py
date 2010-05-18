@@ -3,7 +3,7 @@ from state import *
 import garlicsim
 
 
-# self.FORCE_CRUNCHER = garlicsim.asynchronous_crunching.crunchers.CruncherThread
+self.FORCE_CRUNCHER = garlicsim.asynchronous_crunching.crunchers.CruncherThread
 
 # A cruncher that this simpack insists on using.  
 # 
