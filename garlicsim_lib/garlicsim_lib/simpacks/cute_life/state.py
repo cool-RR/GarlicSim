@@ -78,3 +78,125 @@ class State(garlicsim.data_structures.State):
     # terminate-- Both ways are handled by garlicsim.)
     
     
+    
+from garlicsim.general_misc import caching
+
+class Board(object):
+    __metaclass__ = caching.CachedType
+
+    
+class QuadBoard(Board):
+
+    @staticmethod
+    def create_root(self, level):
+        pass#tododoc
+    
+    def __init__(self, kids):
+        assert len(kids) == 4
+        self.kids = kids
+        
+        if (True in kids) or (False in kids):
+            assert all(isinstance(kid, bool) for kid in kids)
+            self.level = 1
+            
+        else:
+            self.level = level = kids[0].level + 1
+        
+            if level >= 2:
+                
+                self.sub_quad_board = QuadBoard(
+                    kids[0].kids[3],
+                    kids[1].kids[2],
+                    kids[2].kids[1],
+                    kids[3].kids[0]
+                )
+                
+                ########
+                
+                self.north_sub_quad_board = QuadBoard(
+                    kids[0].kids[1],
+                    kids[1].kids[0],
+                    kids[0].kids[3],
+                    kids[1].kids[2]
+                )
+                
+                
+                self.west_sub_quad_board = QuadBoard(
+                    kids[0].kids[2],
+                    kids[0].kids[3],
+                    kids[2].kids[0],
+                    kids[2].kids[1]
+                )
+                
+                
+                self.east_sub_quad_board = QuadBoard(
+                    kids[1].kids[2],
+                    kids[1].kids[3],
+                    kids[3].kids[0],
+                    kids[3].kids[1]
+                )
+                
+                
+                self.south_sub_quad_board = QuadBoard(
+                    kids[2].kids[1],
+                    kids[3].kids[0],
+                    kids[2].kids[3],
+                    kids[3].kids[2]
+                )
+                
+                ########
+                
+                if level >= 3:
+                    
+                    self.sub_tri_board = TriBoard(
+                        kids[0].sub_quad_board,
+                        self.north_sub_quad_board.sub_quad_board,
+                        kids[1].sub_quad_board,
+                        self.west_sub_quad_board.sub_quad_board,
+                        self.sub_quad_board.sub_quad_board,
+                        self.east_sub_quad_board.sub_quad_board,
+                        kids[2].sub_quad_board,
+                        self.south_sub_quad_board.sub_quad_board,
+                        kids[3].sub_quad_board
+                    )
+        
+    
+
+class TriBoard(Board):
+
+    def __init__(self, kids):
+        assert len(kids) == 9
+        self.kids = kids
+        
+        assert all(isinstance(kid, QuadBoard) for kid in kids)            
+        
+        self.level = level = kids[0].level + 0.5
+        # It's actually 0.5849625007211, but who's counting.
+        
+        self.sub_quad_board = QuadBoard(
+            QuadBoard(
+                kids[0].kids[3],
+                kids[1].kids[2],
+                kids[3].kids[1],
+                kids[4].kids[0]
+                ),
+            QuadBoard(
+                kids[1].kids[3],
+                kids[2].kids[2],
+                kids[4].kids[1],
+                kids[5].kids[0]
+                ),
+            QuadBoard(
+                kids[3].kids[3],
+                kids[4].kids[2],
+                kids[6].kids[1],
+                kids[7].kids[0]
+                ),
+            QuadBoard(
+                kids[4].kids[3],
+                kids[5].kids[2],
+                kids[7].kids[1],
+                kids[8].kids[0]
+                )
+        )
+    
