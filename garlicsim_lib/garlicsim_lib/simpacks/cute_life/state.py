@@ -1,8 +1,10 @@
 
 import random
-import abc
 
+
+from garlicsim.general_misc.third_party import abc
 from garlicsim.general_misc import caching
+from garlicsim.general_misc import cute_iter_tools
 from garlicsim.general_misc import misc_tools
 
 import garlicsim.data_structures
@@ -82,7 +84,10 @@ class State(garlicsim.data_structures.State):
     # (You may write your step generator to terminate at some point or to never
     # terminate-- Both ways are handled by garlicsim.)
     
-
+    
+class NotEnoughInformation(garlicsim.misc.SmartException):
+    pass
+    
 class CachedAbstractType(caching.CachedType, abc.ABCMeta):
     pass
 
@@ -160,53 +165,48 @@ class QuadBoard(Board):
                     kids[3].kids[0]
                 ))
                 
-                ########
-                
-                self.north_sub_quad_board = QuadBoard((
-                    kids[0].kids[1],
-                    kids[1].kids[0],
-                    kids[0].kids[3],
-                    kids[1].kids[2]
-                ))
-                
-                
-                self.west_sub_quad_board = QuadBoard((
-                    kids[0].kids[2],
-                    kids[0].kids[3],
-                    kids[2].kids[0],
-                    kids[2].kids[1]
-                ))
-                
-                
-                self.east_sub_quad_board = QuadBoard((
-                    kids[1].kids[2],
-                    kids[1].kids[3],
-                    kids[3].kids[0],
-                    kids[3].kids[1]
-                ))
-                
-                
-                self.south_sub_quad_board = QuadBoard((
-                    kids[2].kids[1],
-                    kids[3].kids[0],
-                    kids[2].kids[3],
-                    kids[3].kids[2]
-                ))
-                
-                ########
-                
                 if level >= 3:
                     
                     self.extended_kids = (
+                        
                         kids[0],
-                        self.north_sub_quad_board,
+                        
+                        QuadBoard((
+                            kids[0].kids[1],
+                            kids[1].kids[0],
+                            kids[0].kids[3],
+                            kids[1].kids[2]
+                        )),
+                        
                         kids[1],
-                        self.west_sub_quad_board,
+                        
+                        QuadBoard((
+                            kids[0].kids[2],
+                            kids[0].kids[3],
+                            kids[2].kids[0],
+                            kids[2].kids[1]
+                            )),
+                        
                         self.sub_quad_board,
-                        self.east_sub_quad_board,
+                        
+                        QuadBoard((
+                            kids[1].kids[2],
+                            kids[1].kids[3],
+                            kids[3].kids[0],
+                            kids[3].kids[1]
+                            )),
+                        
                         kids[2],
-                        self.south_sub_quad_board,
+                        
+                        QuadBoard((
+                            kids[2].kids[1],
+                            kids[3].kids[0],
+                            kids[2].kids[3],
+                            kids[3].kids[2]
+                            )),
+                        
                         kids[3]
+                        
                     )
                     
                     self.sub_tri_board = \
@@ -224,8 +224,28 @@ class QuadBoard(Board):
         else:
             assert self.level >= 2
             return kid.get(x_mod, y_mod)
-                    
-    def get_next(self):#tododoc
+
+    @caching.cache
+    def is_empty(self):
+        if self.level == 1:
+            return all((kid is False for kid in self.kids))
+        else: # self.level >= 2
+            return all((kid.is_empty() for kid in self.kids))
+        
+    @caching.cache    
+    def get_next(self):
+        if self.level <= 1:
+            raise NotEnoughInformation
+        border_grand_kids = [self.kids[i].kids[j] for (i, j) in 
+                             cute_iter_tools.product(xrange(4), xrange(4))
+                             if i + j != 3]
+        if not all((border_grand_kid.is_empty() for border_grand_kid
+                    in border_grand_kids)):
+            
+            raise NotEnoughInformation
+        
+        next_sub_quad_board = self.get_future_sub_quad_board(1)
+        
         raise NotImplementedError
         
     @caching.cache
@@ -243,8 +263,15 @@ class QuadBoard(Board):
     @caching.cache
     def get_future_sub_quad_board(self, n):
         if self.level >= 3:
-            assert 0 <= n <= 2 ** (self.level - 2)
-            return self.get_future_sub_tri_board(n).sub_quad_board
+            maximum_n = 2 ** (self.level - 2)
+            assert 0 <= n <= maximum_n
+            
+            second_n = min(n, maximum_n // 2)
+            first_n = n - second_n
+            
+            future_sub_tri_board = self.get_future_sub_tri_board(first_n)
+            
+            return future_sub_tri_board.get_future_sub_quad_board(second_n)
         else:
             assert self.level == 2
             if n == 0:
@@ -332,6 +359,38 @@ class TriBoard(Board):
                 ))
         ))
         
+        self.bloated_kids = (
+                        
+                        QuadBoard((
+                            kids[0],
+                            kids[1],
+                            kids[3],
+                            kids[4]
+                        )),
+                        
+                        QuadBoard((
+                            kids[1],
+                            kids[2],
+                            kids[4],
+                            kids[5]
+                        )),
+                        
+                        QuadBoard((
+                            kids[3],
+                            kids[4],
+                            kids[6],
+                            kids[7]
+                        )),
+                        
+                        QuadBoard((
+                            kids[4],
+                            kids[5],
+                            kids[7],
+                            kids[8]
+                        )),
+                        
+                    )
+        
     
     def get(self, x, y):
         x_div, x_mod = divmod(x, self.length // 3)
@@ -339,7 +398,20 @@ class TriBoard(Board):
         kid = self.kids[x_div + 3 * y_div]
         return kid.get(x_mod, y_mod)
     
+            
+    @caching.cache
+    def get_future_sub_quad_board(self, n):
+        assert 0 <= n <= 2 ** (self.level - 2.5)
+        return QuadBoard(
+            tuple(
+                bloated_kid.get_future_sub_quad_board(n) for bloated_kid
+                in self.bloated_kids
+            )
+        )
+            
+    
 if __name__ == '__main__':
     board = QuadBoard.create_messy_root(6)
     assert board.get_future_sub_quad_board(0) == board.sub_quad_board
     junk = board.get_future_sub_quad_board(2)
+    1+1
