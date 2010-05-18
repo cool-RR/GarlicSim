@@ -183,7 +183,7 @@ the :file:`coin_flip` folder.) Read the code and the comments:
             
             if amount_to_bet > self.balance:
                 # If we don't have the amount we should bet, we stop the simulation.
-                # True, we can try to bet whatever's left, but for simplicty's sake
+                # True, we can try to bet whatever's left, but for simplicity's sake
                 # we won't do that now.
                 raise garlicsim.misc.exceptions.WorldEnd
                 
@@ -211,7 +211,7 @@ should be done.
 
     Notice that the simulation :ref:`we explored before <intro-tutorial1`, Life,
     had no concept of ending the simulation. Life simulations continue to
-    infinity, regardless if the board becomes empty or repititive or whatever.
+    infinity, regardless if the board becomes empty or repetitive or whatever.
     
     Some simulations have a concept of "simulation end", and some just don't.
 
@@ -350,14 +350,15 @@ anything else. Then this is your chance to make $6,000 with this scheme:
     0.70799999999999996
     
 Around 70%. Not bad, assuming you don't mind losing a lot of money on the other
-30 percent. Though it can be easily shown that you might as well have betted
-$1,000 from the beginning, and then double that if you lost, and you would have
-had the same chance of getting $6,000 at the end. Though that is the subject for
-another simulation...
+30 percent. Though it can be easily shown that you might as well have bet $1,000
+from the beginning, and then double that if you lost, and you would have had the
+same chance of getting $6,000 at the end. Though that is the subject for another
+simulation...
 
 What's next
 ===========
 
-tododoc
+The documentation is still not written, sorry! If you have any question or you need guidance, say hello on the `mailing list`_!
 
 .. _expected value: http://en.wikipedia.org/wiki/Expected_value
+.. _mailing list: garlicsim@librelist.org

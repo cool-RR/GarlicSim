@@ -9,8 +9,10 @@ See its documentation for more info.
 
 import wx
 
+from garlicsim_wx.widgets.general_misc import CuteDialog
 
-class StateCreationDialog(wx.Dialog): # make base class
+
+class StateCreationDialog(CuteDialog): # make base class
     '''
     An initial dialog to show when creating a root state.
     
@@ -18,19 +20,24 @@ class StateCreationDialog(wx.Dialog): # make base class
     '''
     def __init__(self, frame): # tododoc: fuck out all the plain/random
    
-        wx.Dialog.__init__(self, frame, title='Creating a root state')
+        CuteDialog.__init__(self, frame, title='Creating a root state')
         
         self.frame = frame
         self.simpack = frame.gui_project.simpack
-
-        hbox1 = wx.BoxSizer(wx.HORIZONTAL)
-        self.plain = empty = wx.RadioButton(self, -1, 'Plain', style=wx.RB_GROUP)
-        self.random = random = wx.RadioButton(self, -1, 'Random')
-        random.SetValue(True)
-        hbox1.Add(empty, 0, wx.ALIGN_CENTER | wx.ALL, 5)
-        hbox1.Add(random, 0, wx.ALIGN_CENTER | wx.ALL, 5)
+        State = self.simpack.State
 
         vbox = wx.BoxSizer(wx.VERTICAL)
+        self.messy_check_box = messy_check_box = wx.CheckBox(self, -1, 'Messy' )
+        # tododoc: make tooltip
+        messy_check_box.SetValue(True)
+        if State.create_root is None or State.create_messy_root is None:
+            messy_check_box.Disable()
+            if State.create_messy_root is None:
+                messy_check_box.SetValue(False)
+        
+        vbox.Add(messy_check_box, 0, wx.ALL, 10)
+        
+        # todo: add slick way to add args/kwargs
 
         last_hbox = wx.StdDialogButtonSizer()
         ok = wx.Button(self, wx.ID_OK, 'Ok', size=(70, 30))
@@ -43,33 +50,35 @@ class StateCreationDialog(wx.Dialog): # make base class
         last_hbox.AddButton(cancel)
         last_hbox.Realize()
 
-        vbox.Add(hbox1, 0, wx.ALIGN_CENTER | wx.TOP | wx.BOTTOM, 10)
-        vbox.Add(last_hbox, 1, wx.ALIGN_CENTER | wx.BOTTOM, 10)
+        vbox.Add(last_hbox, 0, wx.ALIGN_CENTER | wx.BOTTOM, 10)
 
         self.SetSizer(vbox)
         vbox.Fit(self)
         ok.SetFocus()
 
+        
     def start(self):
         '''Start the dialog to make a new state.'''
         if self.ShowModal() == wx.ID_OK:
-            state = self.simpack.State.create_root()
+            creator = self.simpack.State.create_messy_root if \
+                    self.messy_check_box.GetValue() is True else \
+                    self.simpack.State.create_root
+            
+            state = creator()
         else:
             state = None
         self.Destroy()
         return state
-        
-    def on_ok(self, e=None):
+
+    
+    def on_ok(self, event):
         '''Do 'Okay' on the dialog.'''
-
-        self.info = {}
-
-        self.info['random'] = self.random.GetValue() # It's a bool
 
         self.EndModal(wx.ID_OK)
 
         
-    def on_cancel(self, e=None):
+        
+    def on_cancel(self, event):
         '''Do 'cancel' on the dialog'''
         
         self.EndModal(wx.ID_CANCEL)

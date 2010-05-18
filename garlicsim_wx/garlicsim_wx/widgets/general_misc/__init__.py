@@ -6,3 +6,5 @@
 from knob import Knob
 from focusless_bitmap_button import FocuslessBitmapButton
 from focusless_window import FocuslessWindowMixin
+from cute_dialog import CuteDialog
+

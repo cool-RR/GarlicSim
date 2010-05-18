@@ -12,4 +12,5 @@ class FocuslessWindowMixin(wx.Window):
         
     def on_set_focus(self, event):
         #tododoc: sense for backwards like robin said?
-        self.Navigate()
+        wx.CallAfter(self.Navigate)
+        event.Skip()

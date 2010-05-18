@@ -14,7 +14,7 @@ class EditMenu(CuteMenu):
         
         
         self.undo_button = self.Append(
-            -1,
+            wx.ID_UNDO,
             '&Undo\tCtrl+Z',
             ' Undo the last operation'
         )
@@ -22,7 +22,7 @@ class EditMenu(CuteMenu):
         
         
         self.redo_button = self.Append(
-            -1,
+            wx.ID_REDO,
             '&Redo\tCtrl+Y',
             ' Redo the last operation that was undone'
         )
@@ -69,7 +69,7 @@ deleting it from the simulation'''
 
 
         self.select_all_button = self.Append(
-            -1,
+            wx.ID_SELECTALL,
             'Select &All\tCtrl+A',
             ' Select all the nodes'
         )
@@ -108,7 +108,7 @@ those that are selected'''
         
         
         self.preferences_button = self.Append(
-            -1,
+            wx.ID_PREFERENCES,
             'Prefere&nces',
             " View and modify GarlicSim's program-wide preferences"
         )
