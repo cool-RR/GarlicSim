@@ -3,6 +3,7 @@ import random
 import abc
 
 from garlicsim.general_misc import caching
+from garlicsim.general_misc import misc_tools
 
 import garlicsim.data_structures
 
@@ -98,6 +99,25 @@ class Board(object):
         coordinate_pairs = (divmod(i, length) for i in xrange(length ** 2))
         for coordinate_pair in coordinate_pairs:
             yield self.get(*coordinate_pair)
+            
+    def __repr__(self):
+        '''Display the board, ASCII-art style.'''
+        repr_cell = lambda x, y: '#' if self.get(x, y) is True else ' '
+        repr_row = lambda y: ''.join(repr_cell(x, y) for x in xrange(self.length))
+        return '\n'.join(repr_row(y) for y in xrange(self.length))
+        
+        """
+        return '<%s of level %s with %s cells at %s>' % \
+               (
+                   misc_tools.shorten_class_address(
+                       self.__class__.__module__,
+                       self.__class__.__name__
+                   ),
+                   self.level,
+                   self.length ** 2,
+                   hex(id(self))
+               )
+        """
     
 
     
@@ -278,8 +298,8 @@ class TriBoard(Board):
         
         assert all(isinstance(kid, QuadBoard) for kid in kids)            
         
-        self.level = level = kids[0].level + 0.5
-        # It's actually 0.5849625007211, but who's counting.
+        self.level = level = kids[0].level + 1.5
+        # It's actually 1.5849625007211, but who's counting.
         
         assert self.level >= 2.5
         
@@ -320,6 +340,6 @@ class TriBoard(Board):
         return kid.get(x_mod, y_mod)
     
 if __name__ == '__main__':
-    board = QuadBoard.create_messy_root(4)
+    board = QuadBoard.create_messy_root(6)
     assert board.get_future_sub_quad_board(0) == board.sub_quad_board
-    next = board.get_future_sub_quad_board(1)
+    junk = board.get_future_sub_quad_board(2)
