@@ -323,27 +323,74 @@ class QuadBoard(Board):
         # runs, check true_neighbor_count. if it's bigger than 3, no use to
         # continue.
         assert self.level == 2
+        
+        
+        n = self.kids[0].kids[1] + self.kids[1].kids[0]
+        w = self.kids[0].kids[2] + self.kids[2].kids[0]
+        e = self.kids[1].kids[3] + self.kids[3].kids[1]
+        s = self.kids[3].kids[2] + self.kids[2].kids[3]
+        
+        nw = int(self.kids[0].kids[0])
+        ne = int(self.kids[1].kids[1])
+        sw = int(self.kids[2].kids[2])
+        se = int(self.kids[3].kids[3])
+        
+        core = self.kids[0].kids[3] + self.kids[1].kids[2] + \
+             self.kids[2].kids[1] + self.kids[3].kids[0]
+        
+        
         new_kids = []
-        for y in (1, 2):
-            for x in (1, 2):
-                true_neighbor_count = 0
-                for i in (-1, 0, 1):
-                    for j in (-1, 0, 1):
-                        if i == j == 0:
-                            continue
-                        true_neighbor_count += self.get(x + i, y + j)
-                
-                if self.get(x, y) is True:
-                    if 2 <= true_neighbor_count <= 3:
-                        new_kids.append(True)
-                    else:
-                        new_kids.append(False)
-                else: # self.get(x, y) is False
-                    if true_neighbor_count == 3:
-                        new_kids.append(True)
-                    else:
-                        new_kids.append(False)
-        return QuadBoard(tuple(new_kids))
+        
+        
+        precount_for_first = n + w + nw + core
+        
+        if precount_for_first <= 2:
+            first = False
+        elif precount_for_first == 3:
+            first = True
+        elif precount_for_first == 4:
+            first = self.kids[0].kids[3]
+        else: # precount_for_first >= 5
+            first = False
+        
+        
+        precount_for_second = n + e + ne + core
+        
+        if precount_for_second <= 2:
+            second = False
+        elif precount_for_second == 3:
+            second = True
+        elif precount_for_second == 4:
+            second = self.kids[1].kids[2]
+        else: # precount_for_second >= 5
+            second = False
+        
+        
+        precount_for_third = s + w + sw + core
+        
+        if precount_for_third <= 2:
+            third = False
+        elif precount_for_third == 3:
+            third = True
+        elif precount_for_third == 4:
+            third = self.kids[2].kids[1]
+        else: # precount_for_third >= 5
+            third = False
+        
+        
+        precount_for_fourth = s + e + se + core
+        
+        if precount_for_fourth <= 2:
+            fourth = False
+        elif precount_for_fourth == 3:
+            fourth = True
+        elif precount_for_fourth == 4:
+            fourth = self.kids[3].kids[1]
+        else: # precount_for_fourth >= 5
+            fourth = False
+        
+        
+        return QuadBoard((first, second, third, fourth))
                         
     
 
