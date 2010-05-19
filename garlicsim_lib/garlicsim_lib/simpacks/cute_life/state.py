@@ -39,7 +39,7 @@ class State(garlicsim.data_structures.State):
         try:
             next_board = self.board.get_next()
         except NotEnoughInformation:
-            next_board = self.board.get_bloated().get_next()
+            next_board = self.board.get_bloated_to_quad_board().get_next()
         return State(next_board)
 
     
@@ -100,7 +100,7 @@ class Board(garlicsim.misc.Persistent):
 class QuadBoard(Board):
 
     @staticmethod
-    def create_root(level, fill=None): # todo: make right
+    def create_root(level, fill=False): # todo: make right
         assert isinstance(fill, bool)
         if level == 0:
             return fill
@@ -206,9 +206,10 @@ class QuadBoard(Board):
             return kid.get(x_mod, y_mod)
 
     
-    def get_bloated(self):
+    def get_bloated_to_quad_board(self):
         
-        empty_smaller_quad_board = QuadBoard.create_root(self.level - 1)
+        empty_smaller_quad_board = \
+            QuadBoard.create_root(self.level - 1, fill=False)
         
         return QuadBoard((
             
@@ -253,8 +254,19 @@ class QuadBoard(Board):
         
     @caching.cache    
     def get_next(self):
+        # Could check that the borders around the sub_tri_board are clean
+        # instead of the borders around the sub_quad_board, (in big enough
+        # boards,) and that will redurce bloating, but it's O(1) so not
+        # important.
+        
         if self.level <= 1:
             raise NotEnoughInformation
+        
+        if self.level <= 2:
+            raise NotEnoughInformation
+            # This is not really true in this case, but would be a bummer to
+            # implement because there's no sub_tri_board.
+        
         border_grand_kids = [self.kids[i].kids[j] for (i, j) in 
                              cute_iter_tools.product(xrange(4), xrange(4))
                              if i + j != 3]
@@ -263,15 +275,15 @@ class QuadBoard(Board):
             
             raise NotEnoughInformation
                 
-        next_sub_quad_board = self.get_future_sub_quad_board(1)
+        next_sub_tri_board = self.get_future_sub_tri_board(1)
         
-        return next_sub_quad_board.get_bloated()
+        return next_sub_tri_board.get_bloated_to_quad_board()
         
         
 
     
     @caching.cache
-    def get_future_sub_tri_board(self, n):
+    def get_future_sub_tri_board(self, n=1):
         assert self.level >= 3
         assert 0 <= n <= 2 ** (self.level - 3)
         return TriBoard(
@@ -283,7 +295,7 @@ class QuadBoard(Board):
     
             
     @caching.cache
-    def get_future_sub_quad_board(self, n):
+    def get_future_sub_quad_board(self, n=1):
         if self.level >= 3:
             maximum_n = 2 ** (self.level - 2)
             assert 0 <= n <= maximum_n
@@ -311,8 +323,8 @@ class QuadBoard(Board):
         # continue.
         assert self.level == 2
         new_kids = []
-        for x in (1, 2):
-            for y in (1, 2):
+        for y in (1, 2):
+            for x in (1, 2):
                 true_neighbor_count = 0
                 for i in (-1, 0, 1):
                     for j in (-1, 0, 1):
@@ -383,35 +395,35 @@ class TriBoard(Board):
         
         self.bloated_kids = (
                         
-                        QuadBoard((
-                            kids[0],
-                            kids[1],
-                            kids[3],
-                            kids[4]
-                        )),
-                        
-                        QuadBoard((
-                            kids[1],
-                            kids[2],
-                            kids[4],
-                            kids[5]
-                        )),
-                        
-                        QuadBoard((
-                            kids[3],
-                            kids[4],
-                            kids[6],
-                            kids[7]
-                        )),
-                        
-                        QuadBoard((
-                            kids[4],
-                            kids[5],
-                            kids[7],
-                            kids[8]
-                        )),
-                        
-                    )
+            QuadBoard((
+                kids[0],
+                kids[1],
+                kids[3],
+                kids[4]
+                )),
+            
+            QuadBoard((
+                kids[1],
+                kids[2],
+                kids[4],
+                kids[5]
+                )),
+            
+            QuadBoard((
+                kids[3],
+                kids[4],
+                kids[6],
+                kids[7]
+                )),
+            
+            QuadBoard((
+                kids[4],
+                kids[5],
+                kids[7],
+                kids[8]
+                )),
+            
+        )
         
     
     def get(self, x, y):
@@ -422,7 +434,7 @@ class TriBoard(Board):
     
             
     @caching.cache
-    def get_future_sub_quad_board(self, n):
+    def get_future_sub_quad_board(self, n=1):
         assert 0 <= n <= 2 ** (self.level - 2.5)
         return QuadBoard(
             tuple(
@@ -430,10 +442,158 @@ class TriBoard(Board):
                 in self.bloated_kids
             )
         )
+    
+    
+    def get_bloated_to_quad_board(self):
+        
+        empty_tiny_quad_board = \
+            QuadBoard.create_root(int(round(self.level - 2.5)), fill=False)
+        
+        return QuadBoard((
+            
+            
+            QuadBoard((
+                
+                QuadBoard((
+                    empty_tiny_quad_board,
+                    empty_tiny_quad_board,
+                    empty_tiny_quad_board,
+                    self.kids[0].kids[0]
+                )),
+                
+                QuadBoard((
+                    empty_tiny_quad_board,
+                    empty_tiny_quad_board,
+                    self.kids[0].kids[1],
+                    self.kids[1].kids[0]
+                )),
+                
+                QuadBoard((
+                    empty_tiny_quad_board,
+                    self.kids[0].kids[2],
+                    empty_tiny_quad_board,
+                    self.kids[3].kids[0]
+                )),
+                
+                QuadBoard((
+                    self.kids[0].kids[3],
+                    self.kids[1].kids[2],
+                    self.kids[3].kids[1],
+                    self.kids[4].kids[0]
+                )),
+                 
+            )),
+            
+            
+            QuadBoard((
+                
+                QuadBoard((
+                    empty_tiny_quad_board,
+                    empty_tiny_quad_board,
+                    self.kids[1].kids[1],
+                    self.kids[2].kids[0]
+                )),
+                
+                QuadBoard((
+                    empty_tiny_quad_board,
+                    empty_tiny_quad_board,
+                    self.kids[2].kids[1],
+                    empty_tiny_quad_board
+                )),
+                
+                QuadBoard((
+                    self.kids[1].kids[3],
+                    self.kids[2].kids[2],
+                    self.kids[4].kids[1],
+                    self.kids[5].kids[0]
+                )),
+                
+                QuadBoard((
+                    self.kids[2].kids[3],
+                    empty_tiny_quad_board,
+                    self.kids[5].kids[1],
+                    empty_tiny_quad_board
+                ))
+                
+            )),
+            
+            
+            QuadBoard((
+                
+                QuadBoard((
+                    empty_tiny_quad_board,
+                    self.kids[3].kids[2],
+                    empty_tiny_quad_board,
+                    self.kids[6].kids[0]
+                )),
+                
+                QuadBoard((
+                    self.kids[3].kids[3],
+                    self.kids[4].kids[2],
+                    self.kids[6].kids[1],
+                    self.kids[7].kids[0]
+                )),
+                
+                QuadBoard((
+                    empty_tiny_quad_board,
+                    self.kids[6].kids[2],
+                    empty_tiny_quad_board,
+                    empty_tiny_quad_board
+                )),
+                
+                QuadBoard((
+                    self.kids[6].kids[3],
+                    self.kids[7].kids[2],
+                    empty_tiny_quad_board,
+                    empty_tiny_quad_board
+                )),
+                 
+            )),
+            
+            
+            QuadBoard((
+                
+                QuadBoard((
+                    self.kids[4].kids[3],
+                    self.kids[5].kids[2],
+                    self.kids[7].kids[1],
+                    self.kids[8].kids[0]
+                )),
+                
+                QuadBoard((
+                    self.kids[5].kids[3],
+                    empty_tiny_quad_board,
+                    self.kids[8].kids[1],
+                    empty_tiny_quad_board
+                )),
+                
+                QuadBoard((
+                    self.kids[7].kids[3],
+                    self.kids[8].kids[2],
+                    empty_tiny_quad_board,
+                    empty_tiny_quad_board
+                )),
+                
+                QuadBoard((
+                    self.kids[7].kids[3],
+                    empty_tiny_quad_board,
+                    empty_tiny_quad_board,
+                    empty_tiny_quad_board
+                )),
+                 
+            )),
+            
+            
+        ))
             
     
 if __name__ == '__main__':
-    board = QuadBoard.create_messy_root(6)
-    assert board.get_future_sub_quad_board(0) == board.sub_quad_board
-    junk = board.get_future_sub_quad_board(2)
+    board = QuadBoard((
+        QuadBoard((False, True, False, False)),
+        QuadBoard((False, False, True, False)),
+        QuadBoard((True, True, False, False)),
+        QuadBoard((True, False, False, False))
+    ))
+    b = board.get_bloated_to_quad_board()
+    b.get_future_sub_quad_board(1)
     1+1
