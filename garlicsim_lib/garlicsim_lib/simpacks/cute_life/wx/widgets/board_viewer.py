@@ -50,8 +50,8 @@ class BoardViewer(scrolled.ScrolledPanel,
         screen_tuple = self.CalcUnscrolledPosition(x, y)
         result = [(thing // (self.border_width + self.square_size)) for
                   thing in screen_tuple]
-        if (0 <= result[0] < self.board.width) and \
-           (0 <= result[1] < self.board.height):
+        if (0 <= result[0] < self.board.length) and \
+           (0 <= result[1] < self.board.length):
             return tuple(result)
         else:
             return None
@@ -156,8 +156,8 @@ class BoardViewer(scrolled.ScrolledPanel,
                 new_value = (not old_value)
 
                 new_state = self.gui_project.editing_state()
-                new_board = new_state.board
-                new_board.set(x, y, new_value)
+                new_board = new_state.board.get_with_cell_change(x, y, new_value)
+                new_state.board = self.board = new_board
             
                 self.redraw_needed_flag = True
 
