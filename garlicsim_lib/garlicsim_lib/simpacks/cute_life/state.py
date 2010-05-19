@@ -385,7 +385,7 @@ class QuadBoard(Board):
         elif precount_for_fourth == 3:
             fourth = True
         elif precount_for_fourth == 4:
-            fourth = self.kids[3].kids[1]
+            fourth = self.kids[3].kids[0]
         else: # precount_for_fourth >= 5
             fourth = False
         
