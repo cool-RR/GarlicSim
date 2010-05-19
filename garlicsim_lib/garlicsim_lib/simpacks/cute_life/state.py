@@ -325,6 +325,8 @@ class QuadBoard(Board):
             
     @caching.cache
     def get_future_sub_quad_board(self, n=1):
+        if n == 0:
+            return self.sub_quad_board
         if self.level >= 3:
             maximum_n = 2 ** (self.level - 2)
             assert 0 <= n <= maximum_n
@@ -337,12 +339,9 @@ class QuadBoard(Board):
             return future_sub_tri_board.get_future_sub_quad_board(second_n)
         else:
             assert self.level == 2
-            if n == 0:
-                return self.sub_quad_board
-            else:
-                assert n == 1
-                return self._get_next_sub_quad_board_for_level_two()
-    
+            assert n == 1
+            return self._get_next_sub_quad_board_for_level_two()
+        
     
     
         

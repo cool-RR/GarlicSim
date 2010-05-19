@@ -117,3 +117,7 @@ state = State(board)
 
 def do():
     return garlicsim.simulate(state, 30)
+
+if __name__ == '__main__':
+    s = do()
+    garlicsim.simulate(s, 3)
