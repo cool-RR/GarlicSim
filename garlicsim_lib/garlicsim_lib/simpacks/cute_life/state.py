@@ -62,7 +62,7 @@ class NotEnoughInformation(garlicsim.misc.SmartException):
 class CachedAbstractType(caching.CachedType, abc.ABCMeta):
     pass
 
-class Board(garlicsim.misc.Persistent):
+class Board(object):
     __metaclass__ = CachedAbstractType
     
     @abc.abstractmethod
