@@ -130,7 +130,7 @@ class QuadBoard(Board):
         assert len(kids) == 4
         self.kids = kids
         
-        if (True in kids) or (False in kids):
+        if (False in kids) or (True in kids):
             assert all(isinstance(kid, bool) for kid in kids)
             self.level = 1
             
