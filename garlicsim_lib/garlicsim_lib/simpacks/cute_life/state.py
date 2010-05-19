@@ -84,14 +84,15 @@ class Board(garlicsim.misc.Persistent):
         
     
     def __eq__(self, other):
-        if not isinstance(other, Board):
-            return NotImplemented
-        return self.length == other.length and \
-               all((x == y for (x, y) in itertools.izip(self.kids, other.kids)))
+        return self is other
+        #if not isinstance(other, Board):
+            #return NotImplemented
+        #return self.length == other.length and \
+               #all((x == y for (x, y) in itertools.izip(self.kids, other.kids)))
 
     
     def __ne__(self, other):
-        return not self.__eq__(other)
+        return not (self is other)
     
     
     
