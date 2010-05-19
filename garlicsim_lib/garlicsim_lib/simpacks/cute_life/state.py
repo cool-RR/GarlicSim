@@ -118,9 +118,7 @@ class QuadBoard(Board):
             return fill
         else:
             return QuadBoard(
-                *tuple(
-                    QuadBoard.create_root(level - 1, fill) for i in range(4)
-                )
+                *(QuadBoard.create_root(level - 1, fill) for i in range(4))
             )
         
     
@@ -130,9 +128,7 @@ class QuadBoard(Board):
             return random.choice([True, False])
         else:
             return QuadBoard(
-                *tuple(
-                    QuadBoard.create_messy_root(level - 1) for i in range(4)
-                )
+                *(QuadBoard.create_messy_root(level - 1) for i in range(4))
             )
             
     
@@ -206,16 +202,25 @@ class QuadBoard(Board):
                         
                     )
                     
-                    self.sub_tri_board = \
-                        TriBoard.create_from_parents(self.extended_kids)
+                    #self.sub_tri_board = \
+                        #TriBoard.create_from_parents(self.extended_kids)
         
         self.length = 2 ** self.level
         
+    def get_kid_by_number(self, n):
+        if n == 0:
+            return self.kid_nw
+        elif n == 1:
+            return self.kid_ne
+        elif n == 2:
+            return self.kid_sw
+        else: # n == 3
+            return self.kid_se
         
     def get(self, x, y):
         x_div, x_mod = divmod(x, self.length // 2)
         y_div, y_mod = divmod(y, self.length // 2)
-        kid = self.kids[x_div + 2 * y_div]
+        kid = self.get_kid_by_number(x_div + 2 * y_div)
         if self.level == 1:
             return kid
         else:
@@ -285,11 +290,19 @@ class QuadBoard(Board):
             # This is not really true in this case, but would be a bummer to
             # implement because there's no sub_tri_board.
         
-        border_grand_kids = [self.kids[i].kids[j] for (i, j) in 
-                             cute_iter_tools.product(xrange(4), xrange(4))
-                             if i + j != 3]
-        if not all((border_grand_kid.is_empty() for border_grand_kid
-                    in border_grand_kids)):
+        border_grand_kids = (
+            self.kid_nw.kid_ne, self.kid_nw.kid_sw,
+            self.kid_ne.kid_nw, self.kid_ne.kid_se,
+            self.kid_sw.kid_nw, self.kid_sw.kid_se,
+            self.kid_se.kid_ne, self.kid_se.kid_sw,
+            
+            self.kid_nw.kid_nw, self.kid_ne.kid_ne,
+            self.kid_sw.kid_sw, self.kid_se.kid_se,
+            # Corner grandkids checked last. Faster because they have smaller
+            # chance of being occupied
+        )
+        if not all(border_grand_kid.is_empty() for border_grand_kid
+                    in border_grand_kids):
             
             raise NotEnoughInformation
                 
@@ -305,10 +318,8 @@ class QuadBoard(Board):
         assert self.level >= 3
         assert 0 <= n <= 2 ** (self.level - 3)
         return TriBoard(
-            *tuple(
-                extended_kid.get_future_sub_quad_board(n) for extended_kid
-                in self.extended_kids
-            )
+            *(extended_kid.get_future_sub_quad_board(n) for extended_kid
+              in self.extended_kids)
         )
     
             
@@ -406,13 +417,23 @@ class QuadBoard(Board):
         
         return QuadBoard(first, second, third, fourth)
                         
+    def get_with_cell_change(self, x, y, value):
+        x_div, x_mod = divmod(x, self.length // 2)
+        y_div, y_mod = divmod(y, self.length // 2)
+        kids = [self.kid_nw, self.kid_ne, self.kid_sw, self.kid_se]
+        i_kid = x_div + 2 * y_div
+        if self.level == 1:    
+            kids[i_kid] = value
+        else: # self.level >= 2
+            kids[i_kid] = kids[i_kid].get_with_cell_change(x_mod, y_mod, value)
+        return QuadBoard(*kids)
     
 
 class TriBoard(Board):
 
     @staticmethod
     def create_from_parents(parents):
-        return TriBoard(*tuple(parent.sub_quad_board for parent in parents))
+        return TriBoard(*(parent.sub_quad_board for parent in parents))
     
     def __init__(self, kid_nw, kid_n, kid_ne, kid_w, kid_c, kid_e, kid_sw, kid_s, kid_se):
         
@@ -426,9 +447,7 @@ class TriBoard(Board):
         self.kid_s = kid_s
         self.kid_se = kid_se
         
-        self.kids = (kid_nw, kid_n, kid_ne, kid_w, kid_c, kid_e, kid_sw, kid_s, kid_se)
-        
-        assert all(isinstance(kid, QuadBoard) for kid in self.kids)            
+        # self.kids = (kid_nw, kid_n, kid_ne, kid_w, kid_c, kid_e, kid_sw, kid_s, kid_se)
         
         self.level = level = kid_nw.level + 1.5
         # It's actually 1.5849625007211, but who's counting.
@@ -510,10 +529,8 @@ class TriBoard(Board):
     def get_future_sub_quad_board(self, n=1):
         assert 0 <= n <= 2 ** (self.level - 2.5)
         return QuadBoard(
-            *tuple(
-                bloated_kid.get_future_sub_quad_board(n) for bloated_kid
-                in self.bloated_kids
-            )
+            *(bloated_kid.get_future_sub_quad_board(n) for bloated_kid
+              in self.bloated_kids)
         )
     
     
