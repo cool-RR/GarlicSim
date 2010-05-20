@@ -79,18 +79,18 @@ class CrossProcessPersistent(Persistent):
         if received_uuid: # The object is being unpickled
             thing = library.pop(received_uuid, None)
             if thing:
-                thing._Persistent__skip_setstate = True
+                thing._CrossProcessPersistent__skip_setstate = True
                 return thing
             else: # This object does not exist in our library yet; Let's add it
-                thing = super(Persistent, cls).__new__(cls)
-                thing._Persistent__uuid = received_uuid
+                thing = super(CrossProcessPersistent, cls).__new__(cls)
+                thing._CrossProcessPersistent__uuid = received_uuid
                 library[received_uuid] = thing
                 return thing
                 
         else: # The object is being created
-            thing = super(Persistent, cls).__new__(cls)
+            thing = super(CrossProcessPersistent, cls).__new__(cls)
             new_uuid = uuid.uuid4()
-            thing._Persistent__uuid = new_uuid
+            thing._CrossProcessPersistent__uuid = new_uuid
             library[new_uuid] = thing
             return thing
     
@@ -100,7 +100,7 @@ class CrossProcessPersistent(Persistent):
         return my_dict
     
     def __getnewargs__(self):
-        return (UuidToken(self._Persistent__uuid),)
+        return (UuidToken(self._CrossProcessPersistent__uuid),)
     
     def __setstate__(self, state):
         if self.__dict__.pop("_CrossProcessPersistent__skip_setstate", None):

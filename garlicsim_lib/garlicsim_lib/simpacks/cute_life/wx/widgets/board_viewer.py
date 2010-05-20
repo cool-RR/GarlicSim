@@ -5,13 +5,14 @@
 
 import wx
 import wx.lib.scrolledpanel as scrolled
+from wx.lib import wxcairo
 
 from garlicsim_wx.general_misc import wx_tools
 
 import garlicsim_wx
 
 
-class BoardViewer(scrolled.ScrolledPanel,
+class BoardViewer(scrolled.ScrolledPanel, # Rename to WorldViewer
                   garlicsim_wx.widgets.WorkspaceWidget):
     '''Widget for displaying a Life board.'''
     def __init__(self, frame):
@@ -122,7 +123,7 @@ class BoardViewer(scrolled.ScrolledPanel,
         
         (w, h) = self._get_size_from_board()
         self.SetVirtualSize((w, h))
-        
+        """
         if self.redraw_needed_flag is True:
             self._draw_buffer_bitmap()
             self.redraw_needed_flag = False
@@ -135,6 +136,16 @@ class BoardViewer(scrolled.ScrolledPanel,
         dc.DrawBitmapPoint(self._buffer_bitmap,
                            self.CalcScrolledPosition((0, 0)))
         
+        dc.Destroy()
+        """
+        dc = wx.PaintDC(self)
+        import random
+        context = wxcairo.ContextFromDC(dc)
+        for rect in wx_tools.iter_rects_of_region(self.GetUpdateRegion()):
+            context.set_source_rgb(*(random.random() for i in range(3)))
+            context.rectangle(*rect)
+            context.fill()
+            
         dc.Destroy()
         
         

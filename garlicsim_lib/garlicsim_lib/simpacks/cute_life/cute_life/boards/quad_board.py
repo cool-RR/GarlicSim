@@ -2,116 +2,15 @@
 import random
 import itertools
 
-from garlicsim.general_misc.third_party import abc
 from garlicsim.general_misc import caching
 from garlicsim.general_misc import cute_iter_tools
 from garlicsim.general_misc import misc_tools
 
-import garlicsim.data_structures
-
-
-class State(garlicsim.data_structures.State):
-    
-    """
-    @staticmethod
-    def create_diehard(width=45, height=25):
-        state = State()
-        state.BaseBoard = BaseBoard.create_diehard(width, height)
-        return state
-    """
-    
-    @staticmethod
-    def create_root(level=4, fill=False):
-        return State(QuadBoard.create_root(level, fill))
-    
-    
-    @staticmethod
-    def create_messy_root(level=4, fill=False):
-        return State(QuadBoard.create_messy_root(level))
-    
-    
-    @staticmethod
-    def create_glider():
-        BaseBoard = QuadBoard(
-            QuadBoard(False, True, False, False),
-            QuadBoard(False, False, True, False),
-            QuadBoard(True, True, False, False),
-            QuadBoard(True, False, False, False),
-        )
-        return State(BaseBoard)
-    
-    
-    def __init__(self, BaseBoard):
-        garlicsim.data_structures.State.__init__(self)
-        self.BaseBoard = BaseBoard
-        
-    
-    def step(self):
-        try:
-            next_board = self.BaseBoard.get_next()
-        except NotEnoughInformation:
-            next_board = self.BaseBoard.get_bloated_to_quad_board().get_next()
-        return State(next_board)
-
-    
-    def __repr__(self):
-        return self.BaseBoard.__repr__()
-    
-    
-    def __eq__(self, other):
-        return isinstance(other, State) and self.BaseBoard == other.BaseBoard
-
-    
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    
-    
-class NotEnoughInformation(garlicsim.misc.SmartException):
-    pass
-    
-class CachedAbstractType(caching.CachedType, abc.ABCMeta):
-    pass
-
-class BaseBoard(garlicsim.misc.CrossProcessPersistent):
-    __metaclass__ = CachedAbstractType
-    
-    @abc.abstractmethod
-    def get(self, x, y):
-        pass
-    
-    
-    def __iter__(self):
-        length = self.length
-        coordinate_pairs = (divmod(i, length) for i in xrange(length ** 2))
-        for coordinate_pair in coordinate_pairs:
-            yield self.get(*coordinate_pair)
-            
-    def __repr__(self):
-        '''Display the BaseBoard, ASCII-art style.'''
-        repr_cell = lambda x, y: '#' if self.get(x, y) is True else ' '
-        repr_row = lambda y: ''.join(repr_cell(x, y) for x in xrange(self.length))
-        return '\n'.join(repr_row(y) for y in xrange(self.length))
-        
-    
-    def __eq__(self, other):
-        return self is other
-        #if not isinstance(other, BaseBoard):
-            #return NotImplemented
-        #return self.length == other.length and \
-               #all((x == y for (x, y) in itertools.izip(self.kids, other.kids)))
-
-    
-    def __ne__(self, other):
-        return not (self is other)
-    
-    
-    
-# tododoc: probably change True/False to Alive/Dead
+from base_board import BaseBoard
     
 class QuadBoard(BaseBoard):
 
-    @staticmethod
+    @staticmethod # tododoc: consider killing
     def create_root(level, fill=False): # todo: make right
         assert isinstance(fill, bool)
         if level == 0:
@@ -123,7 +22,7 @@ class QuadBoard(BaseBoard):
         
     
     @staticmethod
-    def create_messy_root(level):
+    def create_messy_root(level): # tododoc: consider killing tihs
         if level == 0:
             return random.choice([True, False])
         else:
@@ -676,13 +575,3 @@ class TriBoard(BaseBoard):
         )
             
     
-if __name__ == '__main__':
-    BaseBoard = QuadBoard(
-        QuadBoard((False, True, False, False)),
-        QuadBoard((False, False, True, False)),
-        QuadBoard((True, True, False, False)),
-        QuadBoard((True, False, False, False))
-    )
-    b = BaseBoard.get_bloated_to_quad_board()
-    b.get_future_sub_quad_board(1)
-    1+1
