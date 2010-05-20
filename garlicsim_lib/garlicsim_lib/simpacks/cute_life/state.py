@@ -10,12 +10,14 @@ from garlicsim.general_misc import misc_tools
 
 import garlicsim.data_structures
 
+from cute_life import World
+
 
 class State(garlicsim.data_structures.State):
     
-    def __init__(self, world):
+    def __init__(self, world=None):
         garlicsim.data_structures.State.__init__(self)
-        self.world = world
+        self.world = world or World()
     
     """
     @staticmethod
@@ -27,7 +29,7 @@ class State(garlicsim.data_structures.State):
     
     @staticmethod
     def create_root():
-        return State(World.create_empty())
+        return State()
     
     
     @staticmethod

@@ -7,7 +7,10 @@ from garlicsim.general_misc import caching
 from garlicsim.general_misc import cute_iter_tools
 from garlicsim.general_misc import misc_tools
 
-from misc import CachedAbstractType, NotEnoughInformation
+import garlicsim
+
+from .misc import CachedAbstractType, NotEnoughInformation
+
 
 class BaseBoard(garlicsim.misc.CrossProcessPersistent):
     __metaclass__ = CachedAbstractType

@@ -8,6 +8,8 @@ from garlicsim.general_misc import misc_tools
 
 from base_board import BaseBoard
 
+from .misc import NotEnoughInformation
+
 class QuadBoard(BaseBoard):
 
     @staticmethod # tododoc: consider killing
