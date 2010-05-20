@@ -13,6 +13,7 @@ from .misc import CachedAbstractType, NotEnoughInformation
 
 
 class BaseBoard(garlicsim.misc.CrossProcessPersistent):
+    # tododoc: need to think what happens to these on pickling/unpickling
     __metaclass__ = CachedAbstractType
     
     @abc.abstractmethod
@@ -22,7 +23,8 @@ class BaseBoard(garlicsim.misc.CrossProcessPersistent):
     
     def __iter__(self):
         length = self.length
-        coordinate_pairs = (divmod(i, length) for i in xrange(length ** 2))
+        coordinate_pairs = (reversed(divmod(i, length)) for i
+                            in xrange(length ** 2))
         for coordinate_pair in coordinate_pairs:
             yield self.get(*coordinate_pair)
             

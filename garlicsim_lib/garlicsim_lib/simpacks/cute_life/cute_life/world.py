@@ -12,22 +12,22 @@ class World(object): # tododoc: allow setting multiple values before changing bo
         self.board = board
         assert isinstance(board, Board)
         self.board_position = board_position
-        self._calculate_board_upper_right_corner()
+        self._calculate_board_far_corner()
         
         
     def set_board_position(self, board_position):
         self.board_position = board_position
-        self._calculate_board_upper_right_corner()
+        self._calculate_board_far_corner()
         
         
     def set_board(self, board):
         self.board = board
-        self._calculate_board_upper_right_corner()
+        self._calculate_board_far_corner()
         # Could check if different length, but it's a neglible optimization
             
         
-    def _calculate_board_upper_right_corner(self):
-        self.board_upper_right_corner = (
+    def _calculate_board_far_corner(self):
+        self.board_far_corner = (
             self.board_position[0] + self.board.length,
             self.board_position[1] + self.board.length
         )
@@ -53,9 +53,9 @@ class World(object): # tododoc: allow setting multiple values before changing bo
             self.board_position[0] - bloat_radius,
             self.board_position[1] - bloat_radius
         )
-        self.board_upper_right_corner = (
-            self.board_upper_right_corner[0] + bloat_radius,
-            self.board_upper_right_corner[1] + bloat_radius
+        self.board_far_corner = (
+            self.board_far_corner[0] + bloat_radius,
+            self.board_far_corner[1] + bloat_radius
         )
         self.board = self.board.get_bloated_to_quad_board()
 
@@ -92,7 +92,7 @@ class World(object): # tododoc: allow setting multiple values before changing bo
             # mindlessly as we do here.)
             
            
-        self.board = self.board.get_with_cell_change(x, y, value)
+        self.board = self.board.get_with_cell_change(bx, by, value)
 
         
     def step(self):
@@ -105,10 +105,10 @@ class World(object): # tododoc: allow setting multiple values before changing bo
             
     def iter_cells(self, state=True, rectangle=None):
         if rectangle is not None:
-            rectangle = self._world_coords_to_board_coords(rectangle[0:2]) + \
-                        self._world_coords_to_board_coords(rectangle[2:4]) 
+            rectangle = self._world_coords_to_board_coords(*rectangle[0:2]) + \
+                        self._world_coords_to_board_coords(*rectangle[2:4]) 
         for board_coords in self.board.cells_tuple(state, rectangle):
-            yield self._board_coords_to_world_coords(board_coords)
+            yield self._board_coords_to_world_coords(*board_coords)
             
             
     @staticmethod
@@ -121,5 +121,10 @@ class World(object): # tododoc: allow setting multiple values before changing bo
         return world
                 
         
+if __name__ == '__main__':
+    w = World.create_messy(4)
+    print w.board
+    x = tuple(w.iter_cells())
+    print x
         
         

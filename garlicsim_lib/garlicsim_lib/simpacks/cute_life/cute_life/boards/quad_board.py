@@ -122,6 +122,8 @@ class QuadBoard(BaseBoard):
     def get(self, x, y):
         x_div, x_mod = divmod(x, self.length // 2)
         y_div, y_mod = divmod(y, self.length // 2)
+        assert 0 <= x_div <= 1
+        assert 0 <= y_div <= 1
         kid = self.get_kid_by_number(x_div + 2 * y_div)
         if self.level == 1:
             return kid
@@ -335,80 +337,88 @@ class QuadBoard(BaseBoard):
         if rectangle is None:
             return self._cells_tuple_full(state)
         
-        (x, y, z, w) = rectangle
-        assert (x <= z) and (y <= w)
+        (x, y, xx, yy) = rectangle
+        assert (x <= xx) and (y <= yy)
         
         if (x <= 0) and (y <= 0) and \
-           (z >= self.length - 1) and (w >= self.length - 1):
+           (xx >= self.length - 1) and (yy >= self.length - 1):
             
             return self._cells_tuple_full(state)
         
-        elif self.level == 2:
+        elif self.level == 1:
             full_tuple = self._cells_tuple_full(state)
             return tuple((a, b) for (a, b) in full_tuple
-                         if (x <= a <= y) and (w <= b <= z))
+                         if (x <= a <= xx) and (y <= b <= yy))
         
-        else: # self.level >= 3 and we have a partial match
+        else: # self.level >= 2 and we have a partial match
                 
             half_length = self.length // 2
-            return self.kid_nw.cells_tuple(state, rectangle) + \
-                   (
-                       (a + half_length, b) for (a, b) in
-                       self.kid_ne.cells_tuple(
-                           state,
-                           (x - half_length, y, z - half_length, w)
-                       )
-                   ) + \
-                   (
-                       (a, b + half_length) for (a, b) in
-                       self.kid_sw.cells_tuple(
-                           state,
-                           (x, y - half_length, z, w - half_length)
-                       )
-                   ) + \
-                   (
-                       (a + half_length, b + half_length) for (a, b) in
-                       self.kid_sw.cells_tuple(
-                           state,
-                           (x - half_length, y - half_length,
-                            z - half_length, w - half_length)
-                       )
-                   )
+            return tuple(
+                itertools.chain(
+                    self.kid_nw.cells_tuple(state, rectangle),
+                    (
+                        (a + half_length, b) for (a, b) in
+                        self.kid_ne.cells_tuple(
+                            state,
+                            (x - half_length, y, xx - half_length, yy)
+                        )
+                        ),
+                    (
+                        (a, b + half_length) for (a, b) in
+                        self.kid_sw.cells_tuple(
+                            state,
+                            (x, y - half_length, xx, yy - half_length)
+                        )
+                        ),
+                    (
+                        (a + half_length, b + half_length) for (a, b) in
+                        self.kid_se.cells_tuple(
+                            state,
+                            (x - half_length, y - half_length,
+                             xx - half_length, yy - half_length)
+                        )
+                    )
+                )
+            )
         
     
     
     @caching.cache
     def _cells_tuple_full(self, state=True):
         
-        if self.level == 2:
+        if self.level == 1:
             result_list = []
-            if self.kid_nw is True:
+            if self.kid_nw is state:
                 result_list.append((0, 0))
-            if self.kid_ne is True:
-                result_list.append((0, 1))
-            if self.kid_sw is True:
+            if self.kid_ne is state:
                 result_list.append((1, 0))
-            if self.kid_se is True:
+            if self.kid_sw is state:
+                result_list.append((0, 1))
+            if self.kid_se is state:
                 result_list.append((1, 1))
             return tuple(result_list)
         
-        else: # self.level >= 3
+        else: # self.level >= 2
                 
             half_length = self.length // 2
-            return self.kid_nw._cells_tuple_full(state) + \
-                   (
-                       (a + half_length, b) for (a, b) in
-                       self.kid_ne._cells_tuple_full(state)
-                   ) + \
-                   (
-                       (a, b + half_length) for (a, b) in
-                       self.kid_sw._cells_tuple_full(state)
-                   ) + \
-                   (
-                       (a + half_length, b + half_length) for (a, b) in
-                       self.kid_sw._cells_tuple_full(state)
-                   )
-    
+            return tuple(
+                itertools.chain(
+                    self.kid_nw._cells_tuple_full(state),
+                    (
+                        (a + half_length, b) for (a, b) in
+                        self.kid_ne._cells_tuple_full(state)
+                        ),
+                    (
+                        (a, b + half_length) for (a, b) in
+                        self.kid_sw._cells_tuple_full(state)
+                        ),
+                    (
+                        (a + half_length, b + half_length) for (a, b) in
+                        self.kid_se._cells_tuple_full(state)
+                    )
+                )
+            )
+        
 
 class TriBoard(BaseBoard):
 
