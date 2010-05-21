@@ -67,7 +67,7 @@ class World(object): # tododoc: allow setting multiple values before changing bo
         if (0 <= bx <= self.board.length - 1) and \
            (0 <= by <= self.board.length - 1):
             
-            return self.board.get(x, y)
+            return self.board.get(bx, by)
         
         else:
             # The requested point is not in the board, it's out in the vacuum.

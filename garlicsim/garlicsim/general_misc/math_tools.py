@@ -15,8 +15,8 @@ def sign(x):
     return -1
 
 def round_to_int(x, up=False):
-    rounded_down = x // 1
+    rounded_down = int(x // 1)
     if up:
-        return int(x) if x.is_integer else rounded_down + 1
+        return int(x) if x.is_integer() else rounded_down + 1
     else:
         return rounded_down

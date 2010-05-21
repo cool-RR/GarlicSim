@@ -52,21 +52,6 @@ class BoardViewer(wx.Panel, # Rename to WorldViewer
         
 
         
-    def unscreenify(self, x, y):
-        '''Translate screen coordinates to board coordinates.'''
-        if self.board is None:
-            return None
-        screen_tuple = self.CalcUnscrolledPosition(x, y)
-        result = [(thing // (self.border_width + self.square_size)) for
-                  thing in screen_tuple]
-        if (0 <= result[0] < self.board.length) and \
-           (0 <= result[1] < self.board.length):
-            return tuple(result)
-        else:
-            return None
-
-    
-        
         
     def _screen_coords_to_absolute_pixel_coords(self, x, y):
         top_left_corner_abs_x, top_left_corner_abs_y = \
@@ -82,11 +67,13 @@ class BoardViewer(wx.Panel, # Rename to WorldViewer
         return (x / self.zoom, -y / self.zoom)
     
     
-    def _absolute_pixel_coords_to_world_coords_int(self, x, y, round_up=False):
+    def _absolute_pixel_coords_to_world_coords_int(self, x, y,
+                                                   round_x_up=False,
+                                                   round_y_up=False):
         float_result = self._absolute_pixel_coords_to_world_coords(x, y)
         return (
-            math_tools.round_to_int(float_result[0], up=round_up),
-            math_tools.round_to_int(float_result[1], up=round_up)
+            math_tools.round_to_int(float_result[0], up=round_x_up),
+            math_tools.round_to_int(float_result[1], up=round_y_up)
         )
 
     
@@ -109,12 +96,15 @@ class BoardViewer(wx.Panel, # Rename to WorldViewer
         )
     
     
-    def _screen_coords_to_world_coords_int(self, x, y, round_up=False):
+    def _screen_coords_to_world_coords_int(self, x, y,
+                                           round_x_up=False,
+                                           round_y_up=False):
         abs_x, abs_y = self._screen_coords_to_absolute_pixel_coords(x, y)
         return self._absolute_pixel_coords_to_world_coords_int(
             abs_x,
             abs_y,
-            round_up=round_up
+            round_x_up=round_x_up,
+            round_y_up=round_y_up
         )
     
     
@@ -140,7 +130,6 @@ class BoardViewer(wx.Panel, # Rename to WorldViewer
         return self._absolute_pixel_coords_to_world_coords_int(
                 self.position[0] - size_x / 2,
                 self.position[1] + size_y / 2,
-                round_up=False
             )
     
         
@@ -150,7 +139,8 @@ class BoardViewer(wx.Panel, # Rename to WorldViewer
         return self._absolute_pixel_coords_to_world_coords_int(
                 self.position[0] + size_x / 2,
                 self.position[1] - size_y / 2,
-                round_up=True
+                round_x_up=True,
+                round_y_up=True
             )
     
     
@@ -251,20 +241,21 @@ class BoardViewer(wx.Panel, # Rename to WorldViewer
 
     def on_mouse_event(self, event):
         '''Mouse event handler.'''
+        (s_x, s_y) = event.GetPositionTuple()
         
-        if event.LeftDown():
-            pos = event.GetPositionTuple()
-            thing = self.unscreenify(*pos)
-            if thing is not None:
-                (x, y) = thing
-                old_value = self.board.get(x,y)
-                new_value = (not old_value)
-
-                new_state = self.gui_project.editing_state()
-                new_board = new_state.board.get_with_cell_change(x, y, new_value)
-                new_state.board = self.board = new_board
+        if event.LeftDown():            
+            (x, y) = self._screen_coords_to_world_coords_int(
+                s_x,
+                s_y,
+                round_x_up=False,
+                round_y_up=True
+            )
             
-                self.redraw_needed_flag = True
+            editing_state = self.gui_project.editing_state()
+            
+            editing_state.world.set(x, y, not editing_state.world.get(x, y))
+            
+            self.redraw_needed_flag = True
 
-
+        # tododoc: make so dragging paints black
         self.Refresh()
