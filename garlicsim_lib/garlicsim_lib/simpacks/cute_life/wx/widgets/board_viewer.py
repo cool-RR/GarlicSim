@@ -5,6 +5,8 @@
 
 from __future__ import division
 
+import random #tododoc: kill at end if unused
+
 import wx
 from wx.lib import wxcairo
 
@@ -80,7 +82,7 @@ class BoardViewer(wx.Panel, # Rename to WorldViewer
     
     
     def _absolute_pixel_coords_to_world_coords_int(self, x, y, round_up=False):
-        float_result = self._absolute_pixel_coords_to_world_coords()
+        float_result = self._absolute_pixel_coords_to_world_coords(x, y)
         return (
             math_tools.round_to_int(float_result[0], up=round_up),
             math_tools.round_to_int(float_result[1], up=round_up)
@@ -166,7 +168,7 @@ class BoardViewer(wx.Panel, # Rename to WorldViewer
         
         
     def set_position(self, position):
-        self.zoom = zoom if zoom <= 1 else int(round(zoom))
+        self.position = position
         self.redraw_needed_flag = True
         self.Refresh()
         
@@ -199,17 +201,23 @@ class BoardViewer(wx.Panel, # Rename to WorldViewer
         bl_x, bl_y = self._get_world_coordinates_of_bottom_left_corner_int()
         tr_x, tr_y = self._get_world_coordinates_of_top_right_corner_int()
     
+        context.set_source_rgb(1, 1, 1)
+        context.paint()
+        
         context.set_source_rgb(0, 0, 0)
         
         for cell_x, cell_y in world.iter_cells(
-            state=True, rectange=(bl_x, bl_y, tr_x, tr_y)):
+            state=True, rectangle=(bl_x, bl_y, tr_x, tr_y)):
             
             cell_x_screen, cell_y_screen = self._world_coords_to_screen_coords(
                 cell_x, cell_y)
             
+            
             context.rectangle(cell_x_screen, cell_y_screen, self.zoom, self.zoom)
             
         context.fill()
+
+        
         
         dc.Destroy()
         
@@ -235,9 +243,10 @@ class BoardViewer(wx.Panel, # Rename to WorldViewer
         
     def on_size(self, event):
         '''EVT_SIZE handler.'''
+        event.Skip()
+        self.redraw_needed_flag = True
         self.Refresh()
-        if event is not None:
-            event.Skip()
+            
 
     def on_mouse_event(self, event):
         '''Mouse event handler.'''

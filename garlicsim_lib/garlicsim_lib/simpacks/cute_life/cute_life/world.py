@@ -112,7 +112,7 @@ class World(object): # tododoc: allow setting multiple values before changing bo
             
             
     @staticmethod
-    def create_messy(length=6):
+    def create_messy(length=20):
         world = World()
         for x in xrange(length):
             for y in xrange(length):
