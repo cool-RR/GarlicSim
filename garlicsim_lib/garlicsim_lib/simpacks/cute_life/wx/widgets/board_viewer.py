@@ -3,36 +3,41 @@
 
 '''Defines the BoardViewer class.'''
 
+from __future__ import division
+
 import wx
-import wx.lib.scrolledpanel as scrolled
 from wx.lib import wxcairo
 
+from garlicsim.general_misc import math_tools
 from garlicsim_wx.general_misc import wx_tools
 
 import garlicsim_wx
 
 
-class BoardViewer(scrolled.ScrolledPanel, # Rename to WorldViewer
+
+class BoardViewer(wx.Panel, # Rename to WorldViewer
                   garlicsim_wx.widgets.WorkspaceWidget):
     '''Widget for displaying a Life board.'''
     def __init__(self, frame):
               
-        scrolled.ScrolledPanel.__init__(self, frame,
-                                        style=wx.SUNKEN_BORDER)
+        wx.Panel.__init__(self, frame, style=wx.SUNKEN_BORDER)
         
         garlicsim_wx.widgets.WorkspaceWidget.__init__(self, frame)
         
         self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM)
-        
-        self.SetupScrolling()
         
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_SIZE, self.on_size)
         self.Bind(wx.EVT_MOUSE_EVENTS, self.on_mouse_event)
 
         self.border_width = 1
-        self.square_size = 7
-        self.board = None
+        self.minimum_size_for_border = 4
+        self.zoom = 7
+        
+        self.position = (0.0, 0.0) # In world coords, tuple of floats.
+        # The center of the panel.
+        
+        self.state = None
         
         self._buffer_bitmap = wx.EmptyBitmap(1, 1)
         
@@ -57,18 +62,115 @@ class BoardViewer(scrolled.ScrolledPanel, # Rename to WorldViewer
         else:
             return None
 
+    
+        
+        
+    def _screen_coords_to_absolute_pixel_coords(self, x, y):
+        top_left_corner_abs_x, top_left_corner_abs_y = \
+            self._get_absolute_pixel_coords_of_top_left_corner()
+        return (
+            x + top_left_corner_abs_x,
+            y + top_left_corner_abs_y
+        )
+
+
+    
+    def _absolute_pixel_coords_to_world_coords(self, x, y):
+        return (x / self.zoom, -y / self.zoom)
+    
+    
+    def _absolute_pixel_coords_to_world_coords_int(self, x, y, round_up=False):
+        float_result = self._absolute_pixel_coords_to_world_coords()
+        return (
+            math_tools.round_to_int(float_result[0], up=round_up),
+            math_tools.round_to_int(float_result[1], up=round_up)
+        )
+
+    
+    def _world_coords_to_absolute_pixel_coords(self, x, y):
+        return (x * self.zoom, -y * self.zoom)
+    
+    
+    def _absolute_pixel_coords_to_screen_coords(self, x, y):
+        top_left_corner_abs_x, top_left_corner_abs_y = \
+            self._get_absolute_pixel_coords_of_top_left_corner()
+        return (
+            x - top_left_corner_abs_x,
+            y - top_left_corner_abs_y
+        )
+
+    
+    def _screen_coords_to_world_coords(self, x, y):
+        return self._absolute_pixel_coords_to_world_coords(
+            *self._screen_coords_to_absolute_pixel_coords(x, y)
+        )
+    
+    
+    def _screen_coords_to_world_coords_int(self, x, y, round_up=False):
+        abs_x, abs_y = self._screen_coords_to_absolute_pixel_coords(x, y)
+        return self._absolute_pixel_coords_to_world_coords_int(
+            abs_x,
+            abs_y,
+            round_up=round_up
+        )
+    
+    
+    
+    def _world_coords_to_screen_coords(self, x, y):
+        return self._absolute_pixel_coords_to_screen_coords(
+            *self._world_coords_to_absolute_pixel_coords(x, y)
+        )
+    
+    
+    def _get_absolute_pixel_coords_of_top_left_corner(self):
+        center_abs_x, center_abs_y = \
+            self._world_coords_to_absolute_pixel_coords(*self.position)
+        size_x, size_y = self.GetClientSizeTuple()
+        
+        return (center_abs_x - size_x / 2,
+                center_abs_y - size_y / 2)
+    
+    
+
+    def _get_world_coordinates_of_bottom_left_corner_int(self): #rounded down
+        size_x, size_y = self.GetClientSizeTuple()
+        return self._absolute_pixel_coords_to_world_coords_int(
+                self.position[0] - size_x / 2,
+                self.position[1] + size_y / 2,
+                round_up=False
+            )
+    
+        
+
+    def _get_world_coordinates_of_top_right_corner_int(self): #rounded up
+        size_x, size_y = self.GetClientSizeTuple()
+        return self._absolute_pixel_coords_to_world_coords_int(
+                self.position[0] + size_x / 2,
+                self.position[1] - size_y / 2,
+                round_up=True
+            )
+    
+    
+        
     def set_state(self, state):
         '''Set the state to be displayed.'''
-        if state is not None:
-            self.set_board(state.board)
+        self.state = state
+        self.redraw_needed_flag = True
+        self.Refresh()
+
         
-    def set_board(self, board):
-        '''Set the board to be displayed.'''
-        if board is not self.board:
-            self.board = board
-            self.redraw_needed_flag = True
-            self.Refresh()
+    def set_zoom(self, zoom):
+        self.zoom = zoom if zoom <= 1 else int(round(zoom))
+        self.redraw_needed_flag = True
+        self.Refresh()
         
+        
+    def set_position(self, position):
+        self.zoom = zoom if zoom <= 1 else int(round(zoom))
+        self.redraw_needed_flag = True
+        self.Refresh()
+        
+    """
     def _get_size_from_board(self):
         '''
         Get the size the widget should be by inspecting the size of the board.
@@ -78,42 +180,37 @@ class BoardViewer(scrolled.ScrolledPanel, # Rename to WorldViewer
             return (length, length)
         else:
             return (1, 1)
+    """
         
     def _draw_buffer_bitmap(self):
         '''Draw the buffer bitmap, which `on_paint` will draw to the screen.'''
         
-        board = self.board
-        
-        (w, h) = self._get_size_from_board()
-        self._buffer_bitmap = wx.EmptyBitmap(w, h)
-        
-        dc = wx.MemoryDC(self._buffer_bitmap)
-        
-        
-        dc.SetPen(wx.TRANSPARENT_PEN)
-        dc.SetBrush(wx.Brush('#d4d0c8'))
-        dc.DrawRectangle(0, 0, w, h)
-        
-        if board is None:
-            dc.Destroy()
+        if self.state is None:
             return
         
-        white_brush = wx.Brush('White')
-        black_brush = wx.Brush('Black')
-        rectangles = []
-        brushes = []
-        for x in xrange(board.length):
-            for y in xrange(board.length):
-                rectangles.append([(self.square_size + self.border_width) * x,
-                                   (self.square_size + self.border_width) * y,
-                                   self.square_size,
-                                   self.square_size])
-                brushes.append(black_brush if board.get(x,y) is True
-                               else white_brush)
-
-        transparent_pen = wx.Pen('#000000', 0, wx.TRANSPARENT)
+        world = self.state.world
         
-        dc.DrawRectangleList(rectangles, transparent_pen, brushes)
+        self._buffer_bitmap = wx.EmptyBitmap(*self.GetClientSize())
+        
+        dc = wx.MemoryDC(self._buffer_bitmap)
+        context = wxcairo.ContextFromDC(dc)
+        
+        
+        bl_x, bl_y = self._get_world_coordinates_of_bottom_left_corner_int()
+        tr_x, tr_y = self._get_world_coordinates_of_top_right_corner_int()
+    
+        context.set_source_rgb(0, 0, 0)
+        
+        for cell_x, cell_y in world.iter_cells(
+            state=True, rectange=(bl_x, bl_y, tr_x, tr_y)):
+            
+            cell_x_screen, cell_y_screen = self._world_coords_to_screen_coords(
+                cell_x, cell_y)
+            
+            context.rectangle(cell_x_screen, cell_y_screen, self.zoom, self.zoom)
+            
+        context.fill()
+        
         dc.Destroy()
         
     def on_paint(self, event):
@@ -121,32 +218,19 @@ class BoardViewer(scrolled.ScrolledPanel, # Rename to WorldViewer
         
         event.Skip()
         
-        (w, h) = self._get_size_from_board()
-        self.SetVirtualSize((w, h))
-        """
         if self.redraw_needed_flag is True:
             self._draw_buffer_bitmap()
             self.redraw_needed_flag = False
                 
         dc = wx.BufferedPaintDC(self)
         
-        dc.SetBackground(wx_tools.get_background_brush())
+        dc.SetBackground(wx.Brush('white'))
         dc.Clear()
         
-        dc.DrawBitmapPoint(self._buffer_bitmap,
-                           self.CalcScrolledPosition((0, 0)))
+        dc.DrawBitmapPoint(self._buffer_bitmap, (0, 0))
         
         dc.Destroy()
-        """
-        dc = wx.PaintDC(self)
-        import random
-        context = wxcairo.ContextFromDC(dc)
-        for rect in wx_tools.iter_rects_of_region(self.GetUpdateRegion()):
-            context.set_source_rgb(*(random.random() for i in range(3)))
-            context.rectangle(*rect)
-            context.fill()
-            
-        dc.Destroy()
+        
         
         
     def on_size(self, event):
