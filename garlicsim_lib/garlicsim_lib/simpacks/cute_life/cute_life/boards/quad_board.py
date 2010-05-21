@@ -342,44 +342,49 @@ class QuadBoard(BaseBoard):
         
         if (x <= 0) and (y <= 0) and \
            (xx >= self.length - 1) and (yy >= self.length - 1):
+            # total match
             
             return self._cells_tuple_full(state)
         
-        elif self.level == 1:
-            full_tuple = self._cells_tuple_full(state)
-            return tuple((a, b) for (a, b) in full_tuple
-                         if (x <= a <= xx) and (y <= b <= yy))
+        elif (x > self.length - 1) or (y > self.length - 1) or \
+             (xx < 0) or (yy < 0):
+            # No match at all
+            return ()
         
-        else: # self.level >= 2 and we have a partial match
-                
-            half_length = self.length // 2
-            return tuple(
-                itertools.chain(
-                    self.kid_nw.cells_tuple(state, rectangle),
-                    (
-                        (a + half_length, b) for (a, b) in
-                        self.kid_ne.cells_tuple(
-                            state,
-                            (x - half_length, y, xx - half_length, yy)
-                        )
-                        ),
-                    (
-                        (a, b + half_length) for (a, b) in
-                        self.kid_sw.cells_tuple(
-                            state,
-                            (x, y - half_length, xx, yy - half_length)
-                        )
-                        ),
-                    (
-                        (a + half_length, b + half_length) for (a, b) in
-                        self.kid_se.cells_tuple(
-                            state,
-                            (x - half_length, y - half_length,
-                             xx - half_length, yy - half_length)
+        else: # partial match
+            if self.level == 1:
+                full_tuple = self._cells_tuple_full(state)
+                return tuple((a, b) for (a, b) in full_tuple
+                             if (x <= a <= xx) and (y <= b <= yy))    
+            else: # self.level >= 2
+                half_length = self.length // 2
+                return tuple(
+                    itertools.chain(
+                        self.kid_nw.cells_tuple(state, rectangle),
+                        (
+                            (a + half_length, b) for (a, b) in
+                            self.kid_ne.cells_tuple(
+                                state,
+                                (x - half_length, y, xx - half_length, yy)
+                            )
+                            ),
+                        (
+                            (a, b + half_length) for (a, b) in
+                            self.kid_sw.cells_tuple(
+                                state,
+                                (x, y - half_length, xx, yy - half_length)
+                            )
+                            ),
+                        (
+                            (a + half_length, b + half_length) for (a, b) in
+                            self.kid_se.cells_tuple(
+                                state,
+                                (x - half_length, y - half_length,
+                                 xx - half_length, yy - half_length)
+                            )
                         )
                     )
                 )
-            )
         
     
     

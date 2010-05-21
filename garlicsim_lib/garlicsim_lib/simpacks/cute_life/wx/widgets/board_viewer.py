@@ -6,6 +6,7 @@
 from __future__ import division
 
 import random #tododoc: kill at end if unused
+import cProfile #tododoc: kill at end if unused
 
 import wx
 from wx.lib import wxcairo
@@ -227,7 +228,7 @@ class BoardViewer(wx.Panel, # Rename to WorldViewer
         event.Skip()
         
         if self.redraw_needed_flag is True:
-            self._draw_buffer_bitmap()
+            self._draw_buffer_bitmap()#cProfile.runctx('self._draw_buffer_bitmap()', globals(), locals())
             self.redraw_needed_flag = False
                 
         dc = wx.BufferedPaintDC(self)

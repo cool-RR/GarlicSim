@@ -33,7 +33,7 @@ class State(garlicsim.data_structures.State):
     
     
     @staticmethod
-    def create_messy_root(length=70):
+    def create_messy_root(length=40):
         return State(World.create_messy(length))
     
     
