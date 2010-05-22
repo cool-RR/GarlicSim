@@ -35,7 +35,7 @@ class BoardViewer(wx.Panel, # Rename to WorldViewer
 
         self.border_width = 1
         self.minimum_size_for_border = 4
-        self.zoom = 7
+        self.zoom = 5
         
         self.position = (0.0, 0.0) # In world coords, tuple of floats.
         # The center of the panel.
@@ -67,13 +67,11 @@ class BoardViewer(wx.Panel, # Rename to WorldViewer
         return (x / self.zoom, -y / self.zoom)
     
     
-    def _absolute_pixel_coords_to_world_coords_int(self, x, y,
-                                                   round_x_up=False,
-                                                   round_y_up=False):
+    def _absolute_pixel_coords_to_world_coords_int(self, x, y):
         float_result = self._absolute_pixel_coords_to_world_coords(x, y)
         return (
-            math_tools.round_to_int(float_result[0], up=round_x_up),
-            math_tools.round_to_int(float_result[1], up=round_y_up)
+            math_tools.round_to_int(float_result[0], up=False),
+            math_tools.round_to_int(float_result[1], up=True)
         )
 
     
@@ -96,15 +94,9 @@ class BoardViewer(wx.Panel, # Rename to WorldViewer
         )
     
     
-    def _screen_coords_to_world_coords_int(self, x, y,
-                                           round_x_up=False,
-                                           round_y_up=False):
-        abs_x, abs_y = self._screen_coords_to_absolute_pixel_coords(x, y)
+    def _screen_coords_to_world_coords_int(self, x, y):
         return self._absolute_pixel_coords_to_world_coords_int(
-            abs_x,
-            abs_y,
-            round_x_up=round_x_up,
-            round_y_up=round_y_up
+            *self._screen_coords_to_absolute_pixel_coords(x, y)
         )
     
     
@@ -138,9 +130,7 @@ class BoardViewer(wx.Panel, # Rename to WorldViewer
         size_x, size_y = self.GetClientSizeTuple()
         return self._absolute_pixel_coords_to_world_coords_int(
                 self.position[0] + size_x / 2,
-                self.position[1] - size_y / 2,
-                round_x_up=True,
-                round_y_up=True
+                self.position[1] - size_y / 2
             )
     
     
@@ -209,7 +199,6 @@ class BoardViewer(wx.Panel, # Rename to WorldViewer
         context.fill()
 
         
-        
         dc.Destroy()
         
     def on_paint(self, event):
@@ -244,12 +233,7 @@ class BoardViewer(wx.Panel, # Rename to WorldViewer
         (s_x, s_y) = event.GetPositionTuple()
         
         if event.LeftDown():            
-            (x, y) = self._screen_coords_to_world_coords_int(
-                s_x,
-                s_y,
-                round_x_up=False,
-                round_y_up=True
-            )
+            (x, y) = self._screen_coords_to_world_coords_int(s_x, s_y)
             
             editing_state = self.gui_project.editing_state()
             
