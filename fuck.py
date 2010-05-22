@@ -1,29 +1,12 @@
 import run_gui
 
-from garlicsim.general_misc import cute_iter_tools
-from garlicsim.general_misc import caching
+from garlicsim_lib.simpacks.cute_life.cute_life.boards import *
+from garlicsim_lib.simpacks.cute_life.cute_life import *
 
-import garlicsim
-from garlicsim_lib.simpacks.cute_life import *
-
-
-@caching.cache
-def _all_boards(level):
-    if level == 0:
-        return (True, False)
-
-    smaller = _all_boards(level - 1)
+def p(x):
+    print inty.int_four_board.to_string(x)
     
-    return tuple(QuadBoard(x, y, z, w) \
-                 for x in smaller for y in smaller \
-                 for z in smaller for w in smaller)
-    
-    
-
-def cache_all_boards(level):
-    assert level >= 2
-    for board in _all_boards(level):
-        board.get_future_sub_quad_board()
-
-if __name__ == '__main__':
-    pass
+x=12944
+qb=QuadBoard(x,0,0,0)
+bqb=qb.get_bloated_to_quad_board()
+bqb.get_future_sub_quad_board(1)

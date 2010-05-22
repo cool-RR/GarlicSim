@@ -9,10 +9,10 @@ from garlicsim.general_misc import misc_tools
 
 import garlicsim
 
-from .misc import CachedAbstractType, NotEnoughInformation
+from .misc import CachedAbstractType
 
 
-class BaseBoard(garlicsim.misc.CrossProcessPersistent):
+class BaseBoard(garlicsim.misc.Persistent):
     # tododoc: need to think what happens to these on pickling/unpickling
     __metaclass__ = CachedAbstractType
     

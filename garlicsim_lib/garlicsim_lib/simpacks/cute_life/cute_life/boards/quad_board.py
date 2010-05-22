@@ -7,10 +7,9 @@ from garlicsim.general_misc import cute_iter_tools
 from garlicsim.general_misc import misc_tools
 
 from base_board import BaseBoard
-from tri_board import TriBoard
 import inty
 
-from .misc import NotEnoughInformation
+from .misc import NeedToBloat
 
 
 class QuadBoard(BaseBoard):
@@ -18,9 +17,11 @@ class QuadBoard(BaseBoard):
     @staticmethod # tododoc: consider killing
     def create_root(level, fill=False): # todo: make right
         assert isinstance(fill, bool)
-        if level == 0:
-            return fill
+        if level == 2:
+            assert fill is False
+            return 0
         else:
+            assert level >= 3
             return QuadBoard(
                 *(QuadBoard.create_root(level - 1, fill) for i in range(4))
             )
@@ -157,7 +158,7 @@ class QuadBoard(BaseBoard):
         assert 0 <= y_div <= 1
         kid = self.get_kid_by_number(x_div + 2 * y_div)
         if self.level == 3:
-            return inty.int_four_board.get(x_mod, y_mod)
+            return inty.int_four_board.get(kid, x_mod, y_mod)
         else: # self.level >= 4
             return kid.get(x_mod, y_mod)
 
@@ -216,9 +217,10 @@ class QuadBoard(BaseBoard):
         # boards,) and that will redurce bloating, but it's O(1) so not
         # important.
         
-        if self.level <= 3:
-            raise NotImplemented
-            # And would probably never be, just bloat your board.
+        if self.level <= 4:
+            raise NeedToBloat
+            # `get_next` is not implemented for level-4 boards. It's not very
+            # important because you can just bloat your board to level 5.
             
         
         border_grand_kids = (
@@ -235,7 +237,7 @@ class QuadBoard(BaseBoard):
         if not all(border_grand_kid.is_empty() for border_grand_kid
                     in border_grand_kids):
             
-            raise NotEnoughInformation
+            raise NeedToBloat # There's not enough information
                 
         next_sub_tri_board = self.get_future_sub_tri_board(1)
         
@@ -247,7 +249,7 @@ class QuadBoard(BaseBoard):
     @caching.cache
     def get_future_sub_tri_board(self, n=1):
         if self.level == 3:
-            WAS HERE
+            raise NotImplemented
         else: # self.level >= 4
             assert 0 <= n <= 2 ** (self.level - 3)
             return TriBoard(
@@ -326,10 +328,10 @@ class QuadBoard(BaseBoard):
         ))
         
         return inty.int_two_board.combine_four_to_int_four_board(
-            arrays.int_four_board_to_next_sub_int_two_board[bloated_kid_nw],
-            arrays.int_four_board_to_next_sub_int_two_board[bloated_kid_ne],
-            arrays.int_four_board_to_next_sub_int_two_board[bloated_kid_sw],
-            arrays.int_four_board_to_next_sub_int_two_board[bloated_kid_se],
+            arrays.next_sub_int_two_board[bloated_kid_nw],
+            arrays.next_sub_int_two_board[bloated_kid_ne],
+            arrays.next_sub_int_two_board[bloated_kid_sw],
+            arrays.next_sub_int_two_board[bloated_kid_se],
             )
     
     
@@ -343,7 +345,7 @@ class QuadBoard(BaseBoard):
         if self.level == 3:
             changer = inty.int_four_board.get_with_cell_change_to_true if value \
                     else inty.int_four_board.get_with_cell_change_to_false
-            kids[i_kid] = changer(kids[i_kid])
+            kids[i_kid] = changer(kids[i_kid], x_mod, y_mod)
         else: # self.level >= 4
             kids[i_kid] = kids[i_kid].get_with_cell_change(x_mod, y_mod, value)
         return QuadBoard(*kids)
@@ -408,16 +410,16 @@ class QuadBoard(BaseBoard):
     def _cells_tuple_full(self, state=True):
         
         if self.level == 3:
-            result_list = []
-            if self.kid_nw is state:
-                result_list.append((0, 0))
-            if self.kid_ne is state:
-                result_list.append((1, 0))
-            if self.kid_sw is state:
-                result_list.append((0, 1))
-            if self.kid_se is state:
-                result_list.append((1, 1))
-            return tuple(result_list)
+            tuples_tuple = inty.tuples.live_cells_tuple if state else \
+                            inty.tuples.dead_cells_tuple
+            return tuple(
+                itertools.chain(
+                    tuples_tuple[self.kid_nw],
+                    ((a, b + 4) for (a, b) in tuples_tuple[self.kid_ne]),
+                    ((a + 4, b) for (a, b) in tuples_tuple[self.kid_sw]),
+                    ((a + 4, b + 4) for (a, b) in tuples_tuple[self.kid_se]),
+                )
+            )
         
         else: # self.level >= 4
                 
@@ -440,3 +442,5 @@ class QuadBoard(BaseBoard):
                 )
             )
         
+
+from tri_board import TriBoard

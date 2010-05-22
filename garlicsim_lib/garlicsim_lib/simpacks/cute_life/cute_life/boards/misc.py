@@ -5,7 +5,7 @@ from garlicsim.general_misc import caching
 import garlicsim
 
         
-class NotEnoughInformation(garlicsim.misc.SmartException):
+class NeedToBloat(garlicsim.misc.SmartException):
     pass
 
 

@@ -98,7 +98,7 @@ class World(object): # tododoc: allow setting multiple values before changing bo
     def step(self):
         try:
             self.board = self.board.get_next()
-        except boards.misc.NotEnoughInformation:
+        except boards.misc.NeedToBloat:
             self._bloat_board()
             self.board = self.board.get_next()
     
