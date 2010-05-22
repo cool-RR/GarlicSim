@@ -63,34 +63,19 @@ class QuadBoard(BaseBoard):
                 
                 kid_nw,
                 
-                inty.int_four_board.com,
+                inty.int_four_board.combine_two_horizontally(kid_nw, kid_ne),
                 
                 kid_ne,
                 
-                QuadBoard(
-                    kid_nw.kid_sw,
-                    kid_nw.kid_se,
-                    kid_sw.kid_nw,
-                    kid_sw.kid_ne
-                    ),
+                inty.int_four_board.combine_two_vertically(kid_nw, kid_sw),
                 
                 self.sub_quad_board,
                 
-                QuadBoard(
-                    kid_ne.kid_sw,
-                    kid_ne.kid_se,
-                    kid_se.kid_nw,
-                    kid_se.kid_ne
-                    ),
+                inty.int_four_board.combine_two_vertically(kid_ne, kid_se),
                 
                 kid_sw,
                 
-                QuadBoard(
-                    kid_sw.kid_ne,
-                    kid_se.kid_nw,
-                    kid_sw.kid_se,
-                    kid_se.kid_sw
-                    ),
+                inty.int_four_board.combine_two_horizontally(kid_sw, kid_se),
                 
                 kid_se
                 
@@ -151,8 +136,8 @@ class QuadBoard(BaseBoard):
                 
             )
             
-            #self.sub_tri_board = \
-            #TriBoard.create_from_parents(self.extended_kids)
+        #self.sub_tri_board = \
+        #TriBoard.create_from_parents(self.extended_kids)
         
         
     def get_kid_by_number(self, n):
@@ -261,19 +246,30 @@ class QuadBoard(BaseBoard):
     
     @caching.cache
     def get_future_sub_tri_board(self, n=1):
-        assert self.level >= 3
-        assert 0 <= n <= 2 ** (self.level - 3)
-        return TriBoard(
-            *(extended_kid.get_future_sub_quad_board(n) for extended_kid
-              in self.extended_kids)
-        )
+        if self.level == 3:
+            WAS HERE
+        else: # self.level >= 4
+            assert 0 <= n <= 2 ** (self.level - 3)
+            return TriBoard(
+                *(extended_kid.get_future_sub_quad_board(n) for extended_kid
+                  in self.extended_kids)
+            )
     
             
     @caching.cache
     def get_future_sub_quad_board(self, n=1):
         if n == 0:
             return self.sub_quad_board
-        if self.level >= 3:
+        
+        elif self.level == 3:
+            
+            if n >= 2:
+                raise NotImplemented
+            assert n == 1
+            return self._get_next_sub_quad_board_for_level_three()
+        
+        else: # self.level >= 4
+        
             maximum_n = 2 ** (self.level - 2)
             assert 0 <= n <= maximum_n
             
@@ -283,94 +279,72 @@ class QuadBoard(BaseBoard):
             future_sub_tri_board = self.get_future_sub_tri_board(first_n)
             
             return future_sub_tri_board.get_future_sub_quad_board(second_n)
-        else:
-            assert self.level == 2
-            assert n == 1
-            return self._get_next_sub_quad_board_for_level_two()
         
     
     
         
-    def _get_next_sub_quad_board_for_level_two(self):
+    def _get_next_sub_quad_board_for_level_three(self):
         # todo optimize: can break `i` loop manually. After two out of three
         # runs, check true_neighbor_count. if it's bigger than 3, no use to
-        # continue.
-        # not cached because it's called only from
-        assert self.level == 2
+        # continue.        
+        # not cached because it's called only from get_future_sub_quad_board,
+        # which is cached.
         
+        assert self.level == 3
         
-        n = self.kid_nw.kid_ne + self.kid_ne.kid_nw
-        w = self.kid_nw.kid_sw + self.kid_sw.kid_nw
-        e = self.kid_ne.kid_se + self.kid_se.kid_ne
-        s = self.kid_se.kid_sw + self.kid_sw.kid_se
+        (kid_nw, kid_ne, kid_sw, kid_se) = \
+            (self.kid_nw, self.kid_ne, self.kid_sw, self.kid_se)
         
-        nw = int(self.kid_nw.kid_nw)
-        ne = int(self.kid_ne.kid_ne)
-        sw = int(self.kid_sw.kid_sw)
-        se = int(self.kid_se.kid_se)
+        arrays = inty.arrays
         
-        core = self.kid_nw.kid_se + self.kid_ne.kid_sw + \
-             self.kid_sw.kid_ne + self.kid_se.kid_nw
+        bloated_kid_nw = sum((
+            arrays.nw_piece_for_nw_bloated_kid[kid_nw],
+            arrays.ne_piece_for_nw_bloated_kid[kid_ne],
+            arrays.sw_piece_for_nw_bloated_kid[kid_sw],
+            arrays.se_piece_for_nw_bloated_kid[kid_se]
+        ))
         
+        bloated_kid_ne = sum((
+            arrays.nw_piece_for_ne_bloated_kid[kid_nw],
+            arrays.ne_piece_for_ne_bloated_kid[kid_ne],
+            arrays.sw_piece_for_ne_bloated_kid[kid_sw],
+            arrays.se_piece_for_ne_bloated_kid[kid_se]
+        ))
         
-        precount_for_first = n + w + nw + core
+        bloated_kid_sw = sum((
+            arrays.nw_piece_for_sw_bloated_kid[kid_nw],
+            arrays.ne_piece_for_sw_bloated_kid[kid_ne],
+            arrays.sw_piece_for_sw_bloated_kid[kid_sw],
+            arrays.se_piece_for_sw_bloated_kid[kid_se]
+        ))
         
-        if precount_for_first <= 2:
-            first = False
-        elif precount_for_first == 3:
-            first = True
-        elif precount_for_first == 4:
-            first = self.kid_nw.kid_se
-        else: # precount_for_first >= 5
-            first = False
+        bloated_kid_se = sum((
+            arrays.nw_piece_for_se_bloated_kid[kid_nw],
+            arrays.ne_piece_for_se_bloated_kid[kid_ne],
+            arrays.sw_piece_for_se_bloated_kid[kid_sw],
+            arrays.se_piece_for_se_bloated_kid[kid_se]
+        ))
         
+        return inty.int_two_board.combine_four_to_int_four_board(
+            arrays.int_four_board_to_next_sub_int_two_board[bloated_kid_nw],
+            arrays.int_four_board_to_next_sub_int_two_board[bloated_kid_ne],
+            arrays.int_four_board_to_next_sub_int_two_board[bloated_kid_sw],
+            arrays.int_four_board_to_next_sub_int_two_board[bloated_kid_se],
+            )
+    
+    
         
-        precount_for_second = n + e + ne + core
-        
-        if precount_for_second <= 2:
-            second = False
-        elif precount_for_second == 3:
-            second = True
-        elif precount_for_second == 4:
-            second = self.kid_ne.kid_sw
-        else: # precount_for_second >= 5
-            second = False
-        
-        
-        precount_for_third = s + w + sw + core
-        
-        if precount_for_third <= 2:
-            third = False
-        elif precount_for_third == 3:
-            third = True
-        elif precount_for_third == 4:
-            third = self.kid_sw.kid_ne
-        else: # precount_for_third >= 5
-            third = False
-        
-        
-        precount_for_fourth = s + e + se + core
-        
-        if precount_for_fourth <= 2:
-            fourth = False
-        elif precount_for_fourth == 3:
-            fourth = True
-        elif precount_for_fourth == 4:
-            fourth = self.kid_se.kid_nw
-        else: # precount_for_fourth >= 5
-            fourth = False
-        
-        
-        return QuadBoard(first, second, third, fourth)
                         
     def get_with_cell_change(self, x, y, value):
         x_div, x_mod = divmod(x, self.length // 2)
         y_div, y_mod = divmod(y, self.length // 2)
         kids = [self.kid_nw, self.kid_ne, self.kid_sw, self.kid_se]
         i_kid = x_div + 2 * y_div
-        if self.level == 1:    
-            kids[i_kid] = value
-        else: # self.level >= 2
+        if self.level == 3:
+            changer = inty.int_four_board.get_with_cell_change_to_true if value \
+                    else inty.int_four_board.get_with_cell_change_to_false
+            kids[i_kid] = changer(kids[i_kid])
+        else: # self.level >= 4
             kids[i_kid] = kids[i_kid].get_with_cell_change(x_mod, y_mod, value)
         return QuadBoard(*kids)
 
@@ -394,11 +368,11 @@ class QuadBoard(BaseBoard):
             return ()
         
         else: # partial match
-            if self.level == 1:
+            if self.level == 3:
                 full_tuple = self._cells_tuple_full(state)
                 return tuple((a, b) for (a, b) in full_tuple
                              if (x <= a <= xx) and (y <= b <= yy))    
-            else: # self.level >= 2
+            else: # self.level >= 4
                 half_length = self.length // 2
                 return tuple(
                     itertools.chain(
@@ -433,7 +407,7 @@ class QuadBoard(BaseBoard):
     @caching.cache
     def _cells_tuple_full(self, state=True):
         
-        if self.level == 1:
+        if self.level == 3:
             result_list = []
             if self.kid_nw is state:
                 result_list.append((0, 0))
@@ -445,7 +419,7 @@ class QuadBoard(BaseBoard):
                 result_list.append((1, 1))
             return tuple(result_list)
         
-        else: # self.level >= 2
+        else: # self.level >= 4
                 
             half_length = self.length // 2
             return tuple(
