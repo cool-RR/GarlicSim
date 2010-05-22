@@ -7,6 +7,7 @@ from garlicsim.general_misc import cute_iter_tools
 from garlicsim.general_misc import misc_tools
 
 from base_board import BaseBoard
+import inty
 
 from .misc import NotEnoughInformation
 
@@ -42,71 +43,80 @@ class QuadBoard(BaseBoard):
         
         # self.kids = (kid_nw, kid_ne, kid_sw, kid_se)
         
-        if isinstance(kid_nw, bool):
-            assert all(isinstance(kid, bool) for kid in
+        if isinstance(kid_nw, int):
+            assert all(isinstance(kid, int) for kid in
                        (kid_nw, kid_ne, kid_sw, kid_se))
-            self.level = 1    
-            self.length = 2
+            self.level = 3    
+            self.length = 8
             
-        else:
+            self.sub_quad_board = \
+                inty.combine_int_four_boards_to_int_four_boards(
+                    kid_nw,
+                    kid_ne,
+                    kid_sw,
+                    kid_se
+                )
+            
+                    
+            
+            
+            
+        else: # self.level >= 4
             self.level = level = kid_nw.level + 1
             self.length = 2 ** self.level
         
-            if level >= 2:
+            self.sub_quad_board = QuadBoard(
+                kid_nw.kid_se,
+                kid_ne.kid_sw,
+                kid_sw.kid_ne,
+                kid_se.kid_nw
+            )
+            
                 
-                self.sub_quad_board = QuadBoard(
+            self.extended_kids = (
+                
+                kid_nw,
+                
+                QuadBoard(
+                    kid_nw.kid_ne,
+                    kid_ne.kid_nw,
                     kid_nw.kid_se,
-                    kid_ne.kid_sw,
-                    kid_sw.kid_ne,
-                    kid_se.kid_nw
-                )
+                    kid_ne.kid_sw
+                ),
                 
-                if level >= 3:
-                    
-                    self.extended_kids = (
-                        
-                        kid_nw,
-                        
-                        QuadBoard(
-                            kid_nw.kid_ne,
-                            kid_ne.kid_nw,
-                            kid_nw.kid_se,
-                            kid_ne.kid_sw
-                        ),
-                        
-                        kid_ne,
-                        
-                        QuadBoard(
-                            kid_nw.kid_sw,
-                            kid_nw.kid_se,
-                            kid_sw.kid_nw,
-                            kid_sw.kid_ne
-                            ),
-                        
-                        self.sub_quad_board,
-                        
-                        QuadBoard(
-                            kid_ne.kid_sw,
-                            kid_ne.kid_se,
-                            kid_se.kid_nw,
-                            kid_se.kid_ne
-                            ),
-                        
-                        kid_sw,
-                        
-                        QuadBoard(
-                            kid_sw.kid_ne,
-                            kid_se.kid_nw,
-                            kid_sw.kid_se,
-                            kid_se.kid_sw
-                            ),
-                        
-                        kid_se
-                        
-                    )
-                    
-                    #self.sub_tri_board = \
-                        #TriBoard.create_from_parents(self.extended_kids)
+                kid_ne,
+                
+                QuadBoard(
+                    kid_nw.kid_sw,
+                    kid_nw.kid_se,
+                    kid_sw.kid_nw,
+                    kid_sw.kid_ne
+                    ),
+                
+                self.sub_quad_board,
+                
+                QuadBoard(
+                    kid_ne.kid_sw,
+                    kid_ne.kid_se,
+                    kid_se.kid_nw,
+                    kid_se.kid_ne
+                    ),
+                
+                kid_sw,
+                
+                QuadBoard(
+                    kid_sw.kid_ne,
+                    kid_se.kid_nw,
+                    kid_sw.kid_se,
+                    kid_se.kid_sw
+                    ),
+                
+                kid_se
+                
+            )
+            
+            #self.sub_tri_board = \
+            #TriBoard.create_from_parents(self.extended_kids)
         
         
     def get_kid_by_number(self, n):
@@ -125,10 +135,9 @@ class QuadBoard(BaseBoard):
         assert 0 <= x_div <= 1
         assert 0 <= y_div <= 1
         kid = self.get_kid_by_number(x_div + 2 * y_div)
-        if self.level == 1:
-            return kid
-        else:
-            assert self.level >= 2
+        if self.level == 3:
+            return inty.int_four_board_get(x_mod, y_mod)
+        else: # self.level >= 4
             return kid.get(x_mod, y_mod)
 
     @caching.cache
@@ -172,9 +181,9 @@ class QuadBoard(BaseBoard):
         
     @caching.cache
     def is_empty(self):
-        if self.level == 1:
-            return not (self.kid_nw or self.kid_ne or self.kid_sw or self.kid_se)
-        else: # self.level >= 2
+        if self.level == 3:
+            return (self.kid_nw == self.kid_ne == self.kid_sw == self.kid_se == 0)
+        else: # self.level >= 4
             return self.kid_nw.is_empty() and self.kid_ne.is_empty() and \
                    self.kid_sw.is_empty() and self.kid_se.is_empty()
 

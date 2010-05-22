@@ -2,7 +2,6 @@
 def _bit_count(i):
     i = i - ((i >> 1) & 0x55555555)
     i = (i & 0x33333333) + ((i >> 2) & 0x33333333)
-    # return ((i + (i >> 4) & 0xF0F0F0F) * 0x1010101) >> 24
     return (((i + (i >> 4) & 0xF0F0F0F) * 0x1010101) & 0xffffffff) >> 24
 
 def _int_four_board_coords_to_cell_number(x, y):
@@ -23,25 +22,25 @@ def _int_four_board_coords_to_cell_number(x, y):
     
 def int_four_board_get(int_four_board, x, y):
     
-    return bool(int_four_board & _coords_to_cell_number(x, y))
+    return bool(int_four_board & _int_four_board_coords_to_cell_number(x, y))
 
 
 
 def int_four_board_get_with_cell_change_to_true(int_four_board, x, y):
     
-    return int_four_board | _coords_to_cell_number(x, y)
+    return int_four_board | _int_four_board_coords_to_cell_number(x, y)
 
 
 
 def int_four_board_get_with_cell_change_to_false(int_four_board, x, y):
     
-    return int_four_board & ~_coords_to_cell_number(x, y)
+    return int_four_board & ~_int_four_board_coords_to_cell_number(x, y)
 
 
 
 def int_four_board_get_with_cell_toggle(int_four_board, x, y):
     
-    return int_four_board ^ _coords_to_cell_number(x, y)
+    return int_four_board ^ _int_four_board_coords_to_cell_number(x, y)
 
 
 def int_four_board_get_next_sub_int_two_board(int_four_board):
@@ -81,19 +80,44 @@ def int_four_board_get_next_sub_int_two_board(int_four_board):
 
             
 def int_four_board_to_string(int_four_board):
-    return '\n'.join(''.join(('#' if get(int_four_board, x, y) else ' ') for x in xrange(0, 4))
-                     for y in xrange(0, 4))
+    return '\n'.join(
+        ''.join(
+            ('#' if int_four_board_get(int_four_board, x, y) else ' ')
+            for x in xrange(0, 4)
+        )
+        for y in xrange(0, 4)
+    )
 
 def combine_int_two_boards_to_int_four_boards(nw, ne, sw, se):
     return nw + (ne << 4) + (sw << 8) + (se << 12)
     
 
+def combine_int_four_boards_to_int_four_boards(nw, ne, sw, se):
+    return (nw >> 12) + \
+           ((ne & 3840) >> 4) + \
+           ((sw & 240) << 4) + \
+           ((se & 15) << 12)
+
+def int_four_board_make_nw_piece_for_se_shift(int_four_board):
+    return ((int_four_board & 34952) >> 3) + \
+           ((int_four_board & 16448 ) >> 5) + \
+           ((int_four_board & 8704) >> 7) + \
+           ((int_four_board & 4096) >> 9)
+
 import array
 
-a=array.array(
+array_of_next_sub_quad_boards = array.array(
     'b',
     (
         int_four_board_get_next_sub_int_two_board(int_four_board)
+        for int_four_board in xrange(0, 65536)
+    )
+)
+
+array_of_nw_pieces_for_se_shift = array.array(
+    'b',
+    (
+        int_four_board_make_nw_piece_for_se_shift(int_four_board)
         for int_four_board in xrange(0, 65536)
     )
 )
