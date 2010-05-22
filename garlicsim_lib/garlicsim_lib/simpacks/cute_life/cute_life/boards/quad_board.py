@@ -7,9 +7,11 @@ from garlicsim.general_misc import cute_iter_tools
 from garlicsim.general_misc import misc_tools
 
 from base_board import BaseBoard
+from tri_board import TriBoard
 import inty
 
 from .misc import NotEnoughInformation
+
 
 class QuadBoard(BaseBoard):
 
@@ -50,17 +52,51 @@ class QuadBoard(BaseBoard):
             self.length = 8
             
             self.sub_quad_board = \
-                inty.combine_int_four_boards_to_int_four_boards(
+                inty.int_four_board.combine_four(
                     kid_nw,
                     kid_ne,
                     kid_sw,
                     kid_se
                 )
             
+            self.extended_kids = (
+                
+                kid_nw,
+                
+                inty.int_four_board.com,
+                
+                kid_ne,
+                
+                QuadBoard(
+                    kid_nw.kid_sw,
+                    kid_nw.kid_se,
+                    kid_sw.kid_nw,
+                    kid_sw.kid_ne
+                    ),
+                
+                self.sub_quad_board,
+                
+                QuadBoard(
+                    kid_ne.kid_sw,
+                    kid_ne.kid_se,
+                    kid_se.kid_nw,
+                    kid_se.kid_ne
+                    ),
+                
+                kid_sw,
+                
+                QuadBoard(
+                    kid_sw.kid_ne,
+                    kid_se.kid_nw,
+                    kid_sw.kid_se,
+                    kid_se.kid_sw
+                    ),
+                
+                kid_se
+                
+            )
+            
                     
-            
-            
-            
         else: # self.level >= 4
             self.level = level = kid_nw.level + 1
             self.length = 2 ** self.level
@@ -136,7 +172,7 @@ class QuadBoard(BaseBoard):
         assert 0 <= y_div <= 1
         kid = self.get_kid_by_number(x_div + 2 * y_div)
         if self.level == 3:
-            return inty.int_four_board_get(x_mod, y_mod)
+            return inty.int_four_board.get(x_mod, y_mod)
         else: # self.level >= 4
             return kid.get(x_mod, y_mod)
 
@@ -195,13 +231,10 @@ class QuadBoard(BaseBoard):
         # boards,) and that will redurce bloating, but it's O(1) so not
         # important.
         
-        if self.level <= 1:
-            raise NotEnoughInformation
-        
-        if self.level <= 2:
-            raise NotEnoughInformation
-            # This is not really true in this case, but would be a bummer to
-            # implement because there's no sub_tri_board.
+        if self.level <= 3:
+            raise NotImplemented
+            # And would probably never be, just bloat your board.
+            
         
         border_grand_kids = (
             self.kid_nw.kid_ne, self.kid_nw.kid_sw,
@@ -433,252 +466,3 @@ class QuadBoard(BaseBoard):
                 )
             )
         
-
-class TriBoard(BaseBoard):
-
-    @staticmethod
-    def create_from_parents(parents):
-        return TriBoard(*(parent.sub_quad_board for parent in parents))
-    
-    def __init__(self, kid_nw, kid_n, kid_ne, kid_w, kid_c, kid_e, kid_sw, kid_s, kid_se):
-        
-        self.kid_nw = kid_nw
-        self.kid_n = kid_n
-        self.kid_ne = kid_ne
-        self.kid_w = kid_w
-        self.kid_c = kid_c
-        self.kid_e = kid_e
-        self.kid_sw = kid_sw
-        self.kid_s = kid_s
-        self.kid_se = kid_se
-        
-        # self.kids = (kid_nw, kid_n, kid_ne, kid_w, kid_c, kid_e, kid_sw, kid_s, kid_se)
-        
-        self.level = level = kid_nw.level + 1.5
-        # It's actually 1.5849625007211, but who's counting.
-        
-        assert self.level >= 2.5
-        
-        self.length = 3 * (2 ** int(self.level - 1))
-        
-        self.sub_quad_board = QuadBoard(
-            QuadBoard(
-                kid_nw.kid_se,
-                kid_n.kid_sw,
-                kid_w.kid_ne,
-                kid_c.kid_nw
-                ),
-            QuadBoard(
-                kid_n.kid_se,
-                kid_e.kid_sw,
-                kid_c.kid_ne,
-                kid_e.kid_nw
-                ),
-            QuadBoard(
-                kid_w.kid_se,
-                kid_c.kid_sw,
-                kid_sw.kid_ne,
-                kid_s.kid_nw
-                ),
-            QuadBoard(
-                kid_c.kid_se,
-                kid_e.kid_sw,
-                kid_s.kid_ne,
-                kid_se.kid_nw
-                )
-        )
-        
-        self.bloated_kids = (
-                        
-            QuadBoard(
-                kid_nw,
-                kid_n,
-                kid_w,
-                kid_c
-                ),
-            
-            QuadBoard(
-                kid_n,
-                kid_ne,
-                kid_c,
-                kid_e
-                ),
-            
-            QuadBoard(
-                kid_w,
-                kid_c,
-                kid_sw,
-                kid_s
-                ),
-            
-            QuadBoard(
-                kid_c,
-                kid_e,
-                kid_s,
-                kid_se
-                ),
-            
-        )
-        
-
-        
-        
-    def get(self, x, y):
-        x_div, x_mod = divmod(x, self.length // 3)
-        y_div, y_mod = divmod(y, self.length // 3)
-        kid = self.kids[x_div + 3 * y_div]
-        return kid.get(x_mod, y_mod)
-    
-            
-    @caching.cache
-    def get_future_sub_quad_board(self, n=1):
-        assert 0 <= n <= 2 ** (self.level - 2.5)
-        return QuadBoard(
-            *(bloated_kid.get_future_sub_quad_board(n) for bloated_kid
-              in self.bloated_kids)
-        )
-    
-    
-    def get_bloated_to_quad_board(self):
-        
-        empty_tiny_quad_board = \
-            QuadBoard.create_root(int(round(self.level - 2.5)), fill=False)
-        
-        return QuadBoard(
-            
-            
-            QuadBoard(
-                
-                QuadBoard(
-                    empty_tiny_quad_board,
-                    empty_tiny_quad_board,
-                    empty_tiny_quad_board,
-                    self.kid_nw.kid_nw
-                ),
-                
-                QuadBoard(
-                    empty_tiny_quad_board,
-                    empty_tiny_quad_board,
-                    self.kid_nw.kid_ne,
-                    self.kid_n.kid_nw
-                ),
-                
-                QuadBoard(
-                    empty_tiny_quad_board,
-                    self.kid_nw.kid_sw,
-                    empty_tiny_quad_board,
-                    self.kid_w.kid_nw
-                ),
-                
-                QuadBoard(
-                    self.kid_nw.kid_se,
-                    self.kid_n.kid_sw,
-                    self.kid_w.kid_ne,
-                    self.kid_c.kid_nw
-                ),
-                 
-            ),
-            
-            
-            QuadBoard(
-                
-                QuadBoard(
-                    empty_tiny_quad_board,
-                    empty_tiny_quad_board,
-                    self.kid_n.kid_ne,
-                    self.kid_ne.kid_nw
-                ),
-                
-                QuadBoard(
-                    empty_tiny_quad_board,
-                    empty_tiny_quad_board,
-                    self.kid_ne.kid_ne,
-                    empty_tiny_quad_board
-                ),
-                
-                QuadBoard(
-                    self.kid_n.kid_se,
-                    self.kid_ne.kid_sw,
-                    self.kid_c.kid_ne,
-                    self.kid_e.kid_nw
-                ),
-                
-                QuadBoard(
-                    self.kid_ne.kid_se,
-                    empty_tiny_quad_board,
-                    self.kid_e.kid_ne,
-                    empty_tiny_quad_board
-                )
-                
-            ),
-            
-            
-            QuadBoard(
-                
-                QuadBoard(
-                    empty_tiny_quad_board,
-                    self.kid_w.kid_sw,
-                    empty_tiny_quad_board,
-                    self.kid_sw.kid_nw
-                ),
-                
-                QuadBoard(
-                    self.kid_w.kid_se,
-                    self.kid_c.kid_sw,
-                    self.kid_sw.kid_ne,
-                    self.kid_s.kid_nw
-                ),
-                
-                QuadBoard(
-                    empty_tiny_quad_board,
-                    self.kid_sw.kid_sw,
-                    empty_tiny_quad_board,
-                    empty_tiny_quad_board
-                ),
-                
-                QuadBoard(
-                    self.kid_sw.kid_se,
-                    self.kid_s.kid_sw,
-                    empty_tiny_quad_board,
-                    empty_tiny_quad_board
-                ),
-                 
-            ),
-            
-            
-            QuadBoard(
-                
-                QuadBoard(
-                    self.kid_c.kid_se,
-                    self.kid_e.kid_sw,
-                    self.kid_s.kid_ne,
-                    self.kid_se.kid_nw
-                ),
-                
-                QuadBoard(
-                    self.kid_e.kid_se,
-                    empty_tiny_quad_board,
-                    self.kid_se.kid_ne,
-                    empty_tiny_quad_board
-                ),
-                
-                QuadBoard(
-                    self.kid_s.kid_se,
-                    self.kid_se.kid_sw,
-                    empty_tiny_quad_board,
-                    empty_tiny_quad_board
-                ),
-                
-                QuadBoard(
-                    self.kid_se.kid_se,
-                    empty_tiny_quad_board,
-                    empty_tiny_quad_board,
-                    empty_tiny_quad_board
-                ),
-                 
-            ),
-            
-            
-        )
-            
-    
