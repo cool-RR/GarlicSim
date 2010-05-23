@@ -412,14 +412,18 @@ class QuadBoard(BaseBoard):
         if self.level == 3:
             tuples_tuple = inty.tuples.live_cells_tuple if state else \
                             inty.tuples.dead_cells_tuple
-            return tuple(
+            result = tuple(
                 itertools.chain(
                     tuples_tuple[self.kid_nw],
-                    ((a, b + 4) for (a, b) in tuples_tuple[self.kid_ne]),
-                    ((a + 4, b) for (a, b) in tuples_tuple[self.kid_sw]),
+                    ((a + 4, b) for (a, b) in tuples_tuple[self.kid_ne]),
+                    ((a , b + 4) for (a, b) in tuples_tuple[self.kid_sw]),
                     ((a + 4, b + 4) for (a, b) in tuples_tuple[self.kid_se]),
                 )
             )
+            
+            for (x, y) in result:
+                assert self.get(x, y) is state
+            return result
         
         else: # self.level >= 4
                 
@@ -441,6 +445,7 @@ class QuadBoard(BaseBoard):
                     )
                 )
             )
+            
         
 
 from tri_board import TriBoard

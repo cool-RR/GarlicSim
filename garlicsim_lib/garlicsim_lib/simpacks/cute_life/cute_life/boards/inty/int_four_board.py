@@ -140,7 +140,7 @@ def make_ne_piece_for_ne_bloated_kid(int_four_board):
            ((int_four_board & 512) >> 3)
 
 def make_sw_piece_for_ne_bloated_kid(int_four_board):
-    return ((int_four_board & 32) >> 5)
+    return ((int_four_board & 32) << 5)
 
 def make_se_piece_for_ne_bloated_kid(int_four_board):
     return ((int_four_board & 17) << 11) + \

@@ -3,7 +3,7 @@ import random
 import boards
 from boards import QuadBoard as Board
 
-_simplest_empty_board = Board(False, False, False, False)
+_simplest_empty_board = Board(0, 0, 0, 0)
 
 class World(object): # tododoc: allow setting multiple values before changing board
     def __init__(self, board=_simplest_empty_board,
