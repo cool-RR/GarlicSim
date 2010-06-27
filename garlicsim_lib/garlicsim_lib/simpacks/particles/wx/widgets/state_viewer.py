@@ -74,9 +74,9 @@ class StateViewer(wx.lib.scrolledpanel.ScrolledPanel,
         #self.Bind(wx.EVT_MOUSE_EVENTS, self.on_mouse_event)
 
         
-        self.visualization = Visualization()
-        self.control = \
-            self.visualization.edit_traits(parent=self, kind='subpanel').control
+        #self.visualization = Visualization()
+        #self.control = \
+            #self.visualization.edit_traits(parent=self, kind='subpanel').control
         
         self.state = None
         

@@ -53,7 +53,7 @@ class State(garlicsim.data_structures.State):
     
 
     @staticmethod
-    def make_messy_root():
+    def create_messy_root():
         big_random_number = lambda: random.uniform(-100, 100)
         small_random_number = lambda: random.uniform(-10, 10)
         big_random_vector = lambda: Vector((big_random_number() for i in range(3)))
