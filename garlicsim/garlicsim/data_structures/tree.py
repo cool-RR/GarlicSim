@@ -9,8 +9,11 @@ See their documentation for more information.
 
 import copy
 
-import garlicsim
+from garlicsim.general_misc import misc_tools
+
+import garlicsim.misc
 from garlicsim.misc import GarlicSimException
+
 
 # `from block import Block` in the bottom of the file.
 # `from node import Node` in the bottom of the file.
@@ -63,25 +66,33 @@ class Tree(object):
         '''
         "Duplicate" the node, marking the new one as touched.
         
-        The new node will have the same parent as `template_node`. This
-        method is used when forking the tree by editing. The state of the new
-        node is usually modified by the user after it is created.
+        The new node will have the same parent as `template_node`. The state of
+        the new node is usually modified by the user after it is created, and
+        after that the node is finalized and used in simulation.
+        
+        This is useful when you want to make some changes in the world state and
+        see what they will cause in the simulation.
         
         Returns the node.
         '''
-        x = copy.deepcopy(template_node.state)
+        new_state = copy.deepcopy(
+            template_node.state,
+            garlicsim.misc.persistent.DontCopyPersistent()
+        )
 
         parent = template_node.parent
-        step_profile = copy.copy(template_node.step_profile)
-        return self.add_state(x, parent,
-                              step_profile=step_profile,
-                              template_node=template_node)
+        new_step_profile = copy.copy(template_node.step_profile)
+        new_node = self.add_state(new_state, parent,
+                                  step_profile=new_step_profile,
+                                  template_node=template_node)
+        new_node.still_in_editing = True
+        return new_node
 
 
     def add_state(self, state, parent=None, step_profile=None,
                   template_node=None):
         '''
-        Wrap state in node and adds to tree.
+        Wrap state in node and add to tree.
         
         Returns the node.
         '''
@@ -120,24 +131,34 @@ tree while specifying a template_node.''')
         self.nodes.append(node)
 
         if parent:
-            if not hasattr(node.state, "clock"):
+            if not hasattr(node.state, 'clock'):
                 node.state.clock = parent.state.clock + 1
 
             node.parent = parent
             parent.children.append(node)
             
             if parent.block:
-                if len(parent.children)==1:
-                    if (not node.touched) and (parent.step_profile == \
-                                               node.step_profile):
+                
+                if len(parent.children) == 1:
+                    
+                    if (not node.touched) and \
+                       (parent.step_profile == node.step_profile):
+                        
                         parent.block.append_node(node)
+                        
                 else: # parent.children > 1
+
                     if not (parent is parent.block[-1]):
+                        
                         parent.block.split(parent)
+                        
             else: # parent.block is None
-                if (not node.touched) and (not parent.touched) and \
+                
+                if (not node.touched) and \
+                   (not parent.touched) and \
                    (len(parent.children)==1) and \
                    (parent.step_profile == node.step_profile):
+                    
                     Block([parent, node])
                 
                         
@@ -147,6 +168,16 @@ tree while specifying a template_node.''')
             self.roots.append(node)
             return node
 
+    
+    def make_end(self, node, step_profile):
+        '''
+        Create an end after the specified node.
+        
+        Must specify a step profile with which this end was reached.
+        '''
+        end = End(self, node, step_profile)
+        return end
+    
 
     def all_possible_paths(self):
         '''Return all the possible paths this tree may entertain.'''
@@ -238,14 +269,16 @@ tree while specifying a template_node.''')
         '''
         Get a string representation of the tree.
         
-        Example output:
-        <garlicsim.data_structures.tree.Tree with 1 roots, 233 nodes and 3
-        possible paths at 0x1f6ae70>
+        Example output:        
+        <garlicsim.data_structures.Tree with 1 roots, 233 nodes and 3 possible
+        paths at 0x1f6ae70>
         '''
-        return '<%s.%s with %s roots, %s nodes and %s possible paths at %s>' % \
+        return '<%s with %s roots, %s nodes and %s possible paths at %s>' % \
                (
-                   self.__class__.__module__,
-                   self.__class__.__name__,
+                   misc_tools.shorten_class_address(
+                       self.__class__.__module__,
+                       self.__class__.__name__
+                   ),
                    len(self.roots),
                    len(self.nodes),
                    len(self.all_possible_paths()),
@@ -267,4 +300,4 @@ tree while specifying a template_node.''')
     
 from node import Node
 from block import Block
-
+from end import End

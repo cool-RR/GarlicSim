@@ -1,12 +1,15 @@
 # Copyright 2009-2010 Ram Rachum.
 # This program is distributed under the LGPL2.1 license.
 
-'''
-This module defines functions that may be useful when working with iterators.
-'''
+'''Defines functions that may be useful when working with iterators.'''
+# todo: make something like `filter` except it returns first found, or raises
+# exception
 
 import itertools
 import __builtin__
+
+from garlicsim.general_misc.infinity import Infinity
+
 
 def consecutive_pairs(iterable):
     '''
@@ -51,13 +54,18 @@ def orderless_combinations(iterable, n, start=0):
     
 def shorten(iterable, n):
     '''
-    Shorten an iterator to length n.
+    Shorten an iterator to length `n`.
     
-    Iterate over the given iterable, but stop after n iterations (Or when the
+    Iterate over the given iterable, but stop after `n` iterations (Or when the
     iterable stops iteration by itself.)
     
-    todo: make possible for n to be infinite.
+    `n` may be infinite.
     '''
+
+    if n == Infinity:
+        for thing in iterable:
+            yield thing
+        raise StopIteration
     
     assert isinstance(n, int)
     counter = 0
@@ -65,6 +73,7 @@ def shorten(iterable, n):
         if counter >= n: raise StopIteration
         yield thing
         counter += 1
+        
         
 def enumerate(reversable, reverse_index=False):
     '''
@@ -82,9 +91,11 @@ def enumerate(reversable, reverse_index=False):
         my_list.reverse()
         return my_list
 
+    
 def is_iterable(thing):
     '''Return whether an object is iterable.'''
     return hasattr(thing, '__iter__')
+
 
 def get_length(iterable):
     '''Get the length of an iterable.'''
@@ -92,6 +103,7 @@ def get_length(iterable):
     for thing in iterable:
         i += 1
     return i
+
 
 def product(*args, **kwargs):
     '''

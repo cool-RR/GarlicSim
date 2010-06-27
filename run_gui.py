@@ -10,9 +10,10 @@ import os.path
 
 
 path_to_garlicsim = os.path.abspath('garlicsim')
+path_to_garlicsim_lib = os.path.abspath('garlicsim_lib')
 path_to_garlicsim_wx = os.path.abspath('garlicsim_wx')
 
-for path in [path_to_garlicsim, path_to_garlicsim_wx]:
+for path in [path_to_garlicsim, path_to_garlicsim_lib, path_to_garlicsim_wx]:
     if path not in sys.path:
         sys.path.append(path)
 
@@ -28,8 +29,8 @@ if not debug:
         pass
     
     
-if __name__ == '__main__':
-        
+def start():
+    
     import garlicsim
     import garlicsim_wx
     
@@ -39,3 +40,6 @@ if __name__ == '__main__':
         
     #import cProfile
     #cProfile.run('garlicsim_wx.start()', sort=2)
+
+if __name__ == '__main__':
+    start()

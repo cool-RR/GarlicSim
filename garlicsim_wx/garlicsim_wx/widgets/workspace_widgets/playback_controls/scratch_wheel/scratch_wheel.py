@@ -7,6 +7,8 @@ Defines the ScratchWheel class.
 See its documentation for more info.
 '''
 
+# todo: currently has horrible cruft
+
 from __future__ import division
 
 import wx
@@ -15,7 +17,7 @@ import time
 
 from garlicsim_wx.widgets import WorkspaceWidget
 from garlicsim_wx.general_misc import cursor_collection
-from garlicsim_wx.general_misc import thread_timer
+from garlicsim_wx.general_misc import cute_timer
 from garlicsim.general_misc import math_tools
 from garlicsim_wx.general_misc.flag_raiser import FlagRaiser
 
@@ -51,12 +53,15 @@ class ScratchWheel(wx.Panel):
         
         assert isinstance(self.gui_project, garlicsim_wx.GuiProject)
         
-        self.frame_number_that_should_be_drawn = 0
-        '''Serial number of the frame that should be drawn.'''
-        
         self.current_frame_number = -1
         '''Serial number of the frame that is currently drawn.'''
         # Set to -1 to make sure first drawing won't fuck up
+        
+        self.current_blur_alpha = 0.
+        '''The current level of motion blur. Between 0 and 1.'''
+        
+        self.current_bitmap = None
+        '''Current bitmap of the wheel.'''
         
         self.image_size = images.get_image_size()
         '''The size of the gear image.'''
@@ -95,16 +100,13 @@ class ScratchWheel(wx.Panel):
         self.velocity_for_maximal_motion_blur = 10
         '''Velocity in which the scratch wheel will get maximal motion blur.'''
         
-        self.current_motion_blur_bitmap = None
-        '''The current bitmap to use for motion blur.'''
-        
-        self.velocity_time_sampling_minimum = 0.05
+        self.velocity_time_sampling_minimum = 0.07
         '''The minimum interval over which we can measure the gear's velocity.'''
         
         self.was_playing_before_drag = None
         '''Flag saying if playback was active before user grabbed the gear.'''
             
-        self.motion_blur_update_timer = thread_timer.ThreadTimer(self)
+        self.motion_blur_update_timer = cute_timer.CuteTimer(self)
         '''
         Timer to use for updating the motion blur bitmap.
         
@@ -115,12 +117,10 @@ class ScratchWheel(wx.Panel):
         frozen with a high motion blur.
         '''
         
-        self.Bind(thread_timer.EVT_THREAD_TIMER,
+        self.Bind(wx.EVT_TIMER,
                   self.on_motion_blur_update_timer,
                   self.motion_blur_update_timer)
         
-        # todo: I don't think ThreadTimer should be used here. But for some
-        # reason wx.Timer didn't work.
         
         self.recalculation_flag = False
         '''Flag saying whether the scratch wheel needs to recalculate.'''
@@ -129,11 +129,15 @@ class ScratchWheel(wx.Panel):
             self.gui_project.emitter_system.make_emitter(
                 inputs=(
                     self.gui_project.pseudoclock_modified_emitter,
-                    self.gui_project.active_node_changed_emitter # todo: needed?
+                    self.gui_project.active_node_changed_or_modified_emitter
+                    # todo: needed?
                 ),
                 outputs=(
                     FlagRaiser(self, 'recalculation_flag',
-                               function=self._recalculate, delay=0.03),
+                               function=self._recalculate),
+                    # todo: There was originally delay=0.03 here, but it made 
+                    # things too sluggish so I removed it. Will this cause a
+                    # problem?
                 ),
                 name='needs_recalculation',
             )
@@ -185,16 +189,16 @@ class ScratchWheel(wx.Panel):
         if frame_number == images.N_FRAMES:
             frame_number =- 1
         
-        if self.frame_number_that_should_be_drawn != frame_number:
-            self.frame_number_that_should_be_drawn = frame_number
+        if self.current_frame_number != frame_number:
+            self.current_frame_number = frame_number
             if possibly_refresh:
                 self.Refresh()
-            
         
         self.__update_motion_blur_bitmap(possibly_refresh)
         
         self.recalculation_flag = False
     
+        
     def __update_motion_blur_bitmap(self, possibly_refresh):
         '''
         Check the speed and update the motion blur bitmap if necessary.
@@ -210,6 +214,7 @@ class ScratchWheel(wx.Panel):
         d_angle = current[1] - last[1]
         
         if d_time < self.velocity_time_sampling_minimum:
+            self.motion_blur_update_timer.Start(30)
             return
             # This protects us from two things: Having a grossly inaccurate
             # velocity reading because of tiny sample, and having a division by
@@ -224,25 +229,29 @@ class ScratchWheel(wx.Panel):
         alpha = min(alpha, 0.8)
         # I'm limiting the alpha, still want to see some animation
         
-        new_motion_blur_image = images.get_blurred_gear_image_by_ratio(alpha)
+        self.current_blur_alpha = alpha
         
-        if self.current_motion_blur_bitmap != new_motion_blur_image:
-            self.current_motion_blur_bitmap = new_motion_blur_image
+        new_bitmap = images.get_blurred_gear_image_by_ratio(
+            self.current_frame_number,
+            alpha
+        )
+        
+        if self.current_bitmap is not new_bitmap:
+            # No need to do this:
+            # self.current_bitmap = new_bitmap
+            # The `on_paint` handler will do it anyway
             if possibly_refresh:
                 self.Refresh()
         
-        if new_motion_blur_image is not \
-           images.get_blurred_gear_image_by_ratio(0):
+        if new_bitmap.blur_raw is not images.get_blur_image_raw(0):
             # We have a non-zero visible motion blur
-            
             self.motion_blur_update_timer.Start(30)
-        
         else:
-            
             self.motion_blur_update_timer.Stop()
             
         self.last_tracked_time_and_angle = current
             
+        
     def on_paint(self, event):
         '''EVT_PAINT handler.'''
         # todo: optimization: if motion blur is (rounded to) zero, don't draw
@@ -257,13 +266,18 @@ class ScratchWheel(wx.Panel):
         bw, bh = self.GetWindowBorderSize()
         
         ox, oy = ((4 - bw) / 2 , (4 - bh) / 2)
+
+        self.current_bitmap = images.get_blurred_gear_image_by_ratio(
+            self.current_frame_number,
+            self.current_blur_alpha
+        )
         
-        bitmap = images.get_image(self.frame_number_that_should_be_drawn)
+        #print(self.current_frame_number,
+            #self.current_blur_alpha)
+        
         dc = wx.PaintDC(self)
-        dc.DrawBitmap(bitmap, ox, oy)
-        dc.DrawBitmap(self.current_motion_blur_bitmap, ox, oy, useMask=True)
+        dc.DrawBitmap(self.current_bitmap, ox, oy)
         # todo: Is the way I draw the bitmap the fastest way?
-        self.current_frame_number = self.frame_number_that_should_be_drawn
             
     def on_mouse_event(self, e):
         '''EVT_MOUSE_EVENTS handler.'''

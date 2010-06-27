@@ -19,7 +19,7 @@ __all__ = ["CruncherThread"]
 
 class CruncherThread(threading.Thread):
     '''
-    CruncherThread is a type of cruncher.
+    CruncherThread is cruncher that works from a thread.
     
     A cruncher is a worker which crunches the simulation. It receives a state
     from the main program, and then it repeatedly applies the step function of
@@ -104,12 +104,15 @@ class CruncherThread(threading.Thread):
             
         order = None
         
-        for state in self.iterator:
-            self.work_queue.put(state)
-            self.check_crunching_profile(state)
-            order = self.get_order()
-            if order:
-                self.process_order(order)
+        try:
+            for state in self.iterator:
+                self.work_queue.put(state)
+                self.check_crunching_profile(state)
+                order = self.get_order()
+                if order:
+                    self.process_order(order)
+        except garlicsim.misc.WorldEnd:
+            self.work_queue.put(garlicsim.asynchronous_crunching.misc.EndMarker())
 
         
     def check_crunching_profile(self, state):

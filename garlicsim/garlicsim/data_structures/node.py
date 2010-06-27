@@ -8,10 +8,12 @@ See documentation of Node for more information.
 '''
 
 from garlicsim.general_misc.infinity import Infinity
+from garlicsim.general_misc import misc_tools
 
 from garlicsim.misc import GarlicSimException
 
 from state import State
+from tree_member import TreeMember
 # We are doing `from block import Block` in the bottom of the file.
 # We are doing `from path import Path` in the bottom of the file.
 
@@ -22,8 +24,11 @@ __all__ = ["Node", "NodeError"]
 class NodeError(GarlicSimException):
     '''Node-related Exception.'''
 
-
-class Node(object):
+class NodeLookupError(NodeError, LookupError):
+    '''A node-related lookup was requested but no result was found.'''
+    
+    
+class Node(TreeMember):
     '''
     Nodes are used to organize states in a tree.
     
@@ -98,6 +103,14 @@ class Node(object):
         finalized, thus no crunching should be made from the node until it is
         finalized.
         '''
+        
+        self.ends = []
+        '''
+        The ends whose parent is this node.
+        
+        This means, world ends that were arrived to on a timeline terminating
+        with this node.
+        '''
   
         
     def __len__(self):
@@ -105,6 +118,26 @@ class Node(object):
         return 1
 
     
+    def finalize(self):
+        '''
+        Finalize the node, assuming it's in currectly in editing mode.
+        
+        Before an edited node is finalized, it cannot be crunched from and
+        cannot have children. (i.e. nodes that follow it in time.) After getting
+        finalized, it may be crunched from and be assigned children.
+        '''
+        if self.still_in_editing is False:
+            if self.touched:
+                message = '''You tried to finalize a touched node, but it has \
+already been finalized.'''
+            else: # self.touched is False
+                message = '''You tried to finalize an untouched node. \
+Untouched nodes can't be edited, so they have no concept of being finalized.'''
+            raise NodeError(message)
+        
+        self.still_in_editing = False
+
+        
     def soft_get_block(self):
         '''
         If this node is a member of a block, return the block.
@@ -140,6 +173,7 @@ class Node(object):
         may specify decisions that are not even on the same root as these
         paths.
         '''
+        #todo: possibly add `reversed` option
         past_path = self.make_past_path()
         paths = []
         fork = None
@@ -156,7 +190,7 @@ class Node(object):
         else: # fork is None and real_thing is the final node of the path
             # In this case there are no forks after our node, we just return
             # the past_path which we have driven to its end. (Not that it has
-            # any forks to decide on anyway.
+            # any forks to decide on anyway.)
             return [past_path]
     
     def make_past_path(self):
@@ -256,7 +290,61 @@ class Node(object):
                 continue
             
         return leaves
+
     
+    def get_ancestor(self, generations=1, round=False):
+        '''
+        Get an ancestor of this node.
+        
+        `generations` specifies the number of generation that the returned
+        ancestor should be above the current node. `round` determines how this
+        method will behave if it was asked for too many generations back, and
+        not enough existed. If `round` is True, it will return the root. If
+        `round` is False, it will raise a LookupError.
+        '''
+
+        assert generations >= 0
+        if generations == 0:
+            return self
+        if generations == 1:
+            if self.parent:
+                return self.parent
+            else: # self.parent is None
+                if round:
+                    return self
+                else: # round is False
+                    raise NodeLookupError('''You asked for the node's parent, \
+but it's a root.''')                
+                
+        block = self.block
+        if block:
+            our_index = block.index(self)
+            wanted_index = our_index - generations
+            if wanted_index >= 0:
+                return block[wanted_index]
+            else: # wanted index < 0
+                first_node = block[0]
+                parent_of_first = first_node.parent
+                if parent_of_first is None:
+                    if round:
+                        return first_node
+                    else: # round is False
+                        raise NodeLookupError('''You asked for too many \
+generations back. This node's ancestry line doesn't go back that far.''')
+                
+                return parent_of_first.get_ancestor(- wanted_index - 1, round=round)
+        
+        assert self.block is None
+        if self.parent:
+            return self.parent.get_ancestor(generations - 1, round)
+        else:
+            if round:
+                return self
+            else: # round is False
+                raise NodeLookupError('''You asked for too many generations \
+back. This node's ancestry line doesn't go back that far.''')
+
+            
     def get_root(self):
         '''
         Get the root of this node.
@@ -279,35 +367,38 @@ class Node(object):
         '''Return whether the node the first one on its block.'''
         return self.block and (self.block.index(self) == 0)
     
-    def is_overlapping(self, other):
+    def is_overlapping(self, tree_member):
         '''
-        Return whether this node overlaps with the given entity.
+        Return whether this node overlaps with the given tree_member.
         
-        `other` may be a node, in which case overlapping means being the same
-        node. `other` can also be a block, in which case overlapping means this
-        node is contained in the block.
+        `tree_member` may be a node, in which case overlapping means being the
+        same node. `tree_member` can also be a block, in which case overlapping
+        means this node is contained in the block.
         '''
-        if other is None: return False
-        if isinstance(other, Node):
-            return (self is other)
+        if tree_member is None: return False
+        if isinstance(tree_member, Node):
+            return (self is tree_member)
         else:
-            assert isinstance(other, Block)
-            return (self in other)
+            assert isinstance(tree_member, Block)
+            return (self in tree_member)
     
     def __repr__(self):
         '''
         Get a string representation of the node.
         
-        Example output:
-        <garlicsim.data_structures.node.Node with clock 6.5, untouched, belongs
-        to a block, crunched with StepProfile(t=0.1), at 0x1ffde70>
+        Example output:        
+        <garlicsim.data_structures.Node with clock 6.5, untouched, belongs to a
+        block, crunched with StepProfile(t=0.1), at 0x1ffde70>
         '''
-        return '<%s.%s%s, %s%s, %s, %sat %s>' % \
+        return '<%s%s, %s%s%s, %s, %sat %s>' % \
             (
-                self.__class__.__module__,
-                self.__class__.__name__,
+                misc_tools.shorten_class_address(
+                    self.__class__.__module__,
+                    self.__class__.__name__
+                    ),
                 ' with clock %s' % self.state.clock if hasattr(self.state, 'clock') else '',
                 'root, ' if (self.parent is None) else '',
+                'leaf, ' if (len(self.children) == 0) else '',
                 'touched' if self.touched else 'untouched',
                 'belongs to a block' if self.block else 'blockless',
                 'crunched with %s, ' % self.step_profile if self.step_profile else '',

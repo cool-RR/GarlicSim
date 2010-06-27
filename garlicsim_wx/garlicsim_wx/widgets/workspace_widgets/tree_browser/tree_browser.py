@@ -19,6 +19,7 @@ from garlicsim_wx.general_misc import emitters
 from garlicsim_wx.general_misc import wx_tools
 from garlicsim_wx.general_misc.flag_raiser import FlagRaiser
 import garlicsim
+import garlicsim_wx
 from garlicsim_wx.widgets import WorkspaceWidget
 
 from . import images as __images_package
@@ -28,9 +29,7 @@ connector_length = 10 # length of connecting line between elements
 
 
 class TreeBrowser(ScrolledPanel, WorkspaceWidget):
-    '''
-    A widget for browsing a garlicsim.data_structures.Tree.
-    '''
+    '''Widget for browsing a garlicsim.data_structures.Tree.'''
     def __init__(self, frame): # todo: on mouse drag should pause like seek bar does
         ScrolledPanel.__init__(self, frame, size=(100, 100),
                                style=wx.SUNKEN_BORDER)
@@ -55,6 +54,11 @@ class TreeBrowser(ScrolledPanel, WorkspaceWidget):
         self.Bind(wx.EVT_SIZE, self.on_size)
         self.Bind(wx.EVT_MOUSE_EVENTS, self.on_mouse_event)
 
+        self.menu = garlicsim_wx.general_misc.cute_menu.CuteMenu.add_menus(
+            [garlicsim_wx.misc.menu_bar.node_menu.NodeMenu(self.frame),
+             garlicsim_wx.misc.menu_bar.block_menu.BlockMenu(self.frame)]
+        )
+        
         self.tree_remapping_flag = False
         self.recalculation_flag = False
         
@@ -74,7 +78,7 @@ class TreeBrowser(ScrolledPanel, WorkspaceWidget):
             self.gui_project.emitter_system.make_emitter(
                 inputs=(
                     self.needs_tree_remapping_emitter,
-                    self.gui_project.active_node_changed_emitter,
+                    self.gui_project.active_node_changed_or_modified_emitter,
                     self.gui_project.tree_modified_on_path_emitter,                
                     # Note that if there's a non-structure tree change not on
                     # the path it won't affect us.
@@ -90,17 +94,28 @@ class TreeBrowser(ScrolledPanel, WorkspaceWidget):
         elements_raw = {            
             'Untouched': 'graysquare.png',
             'Touched': 'graystar.png',
+            'Unfinalized Touched': 'grayunfinalizedstar.png',
+            'Untouched End': 'grayendsquare.png',
+            'Touched End': 'grayendstar.png',
             'Block': 'grayblock.png',
             'Active Untouched': 'orangesquare.png',
             'Active Touched': 'orangestar.png',
+            'Active Unfinalized Touched': 'orangeunfinalizedstar.png',
+            'Active Untouched End': 'orangeendsquare.png',
+            'Active Touched End': 'orangeendstar.png',
             'Active Block': 'orangeblock.png',
         }
         
         self.elements = {}
         for key in elements_raw:
-            file_name = pkg_resources.resource_filename(images_package,
-                                                        elements_raw[key])
-            self.elements[key] = wx.Bitmap(file_name, wx.BITMAP_TYPE_ANY)
+            stream = pkg_resources.resource_stream(images_package,
+                                                      elements_raw[key])
+            self.elements[key] = wx.BitmapFromImage(
+                wx.ImageFromStream(
+                    stream,
+                    wx.BITMAP_TYPE_ANY
+                )
+            )
 
     def on_paint(self, event):
         '''Refresh the tree browser.'''
@@ -121,7 +136,7 @@ class TreeBrowser(ScrolledPanel, WorkspaceWidget):
             return
 
 
-        pen = wx.Pen("Black", 1, wx.SOLID)
+        pen = wx.Pen('Black', 1, wx.SOLID)
         pen.SetCap(wx.CAP_PROJECTING)
         pen.SetJoin(wx.JOIN_ROUND)
 
@@ -158,6 +173,8 @@ class TreeBrowser(ScrolledPanel, WorkspaceWidget):
             if thing is None:
                 #maybe deselect?
                 pass
+            elif isinstance(thing, garlicsim.data_structures.End):
+                self.gui_project.set_active_node(thing.parent)
             else:
                 self.gui_project.set_active_node(thing)
                 
@@ -170,7 +187,7 @@ class TreeBrowser(ScrolledPanel, WorkspaceWidget):
             else:
                 self.gui_project.set_active_node(thing)
                 
-            self.PopupMenu(self.gui_project.get_node_menu(), e.GetPosition())
+            self.PopupMenu(self.menu, e.GetPosition())
 
 
     def search_map(self, x, y):
@@ -201,21 +218,32 @@ class NiftyPaintDC(wx.BufferedPaintDC):
 
     def draw_sub_tree(self, point, tree, start):
         make_block_stripe = False
+
         if isinstance(start, garlicsim.data_structures.Block):
+            
             type = "Block"
             kids = start[-1].children
             if start == self.active_soft_block:
                 make_block_stripe = True
                 type = "Active " + type
+                
         elif isinstance(start, garlicsim.data_structures.Node):
+            
             kids = start.children
+            
             if start.touched:
                 type = "Touched"
             else:
                 type = "Untouched"
+                
+            if start.still_in_editing:
+                type = 'Unfinalized ' + type
+                    
             if start == self.active_soft_block:
                 type = "Active " + type
+                
         else:
+            
             raise Exception
 
 
@@ -286,6 +314,26 @@ class NiftyPaintDC(wx.BufferedPaintDC):
             self.DrawLinePoint(line_start, line_end)
             max_width = max(max_width, self_width + new_width)
             total_height += new_height
+            
+        
+        ends = start.ends if isinstance(start, garlicsim.data_structures.Node) \
+             else start[-1].ends
+        for end in ends:
+            line_end = vectorish.add(
+                point,
+                (
+                    self_width + 1,
+                 total_height + bitmap_size[1] // 2
+                )
+            )
+            
+            temp = vectorish.add(point, (self_width, total_height))
+            (new_width, new_height) = \
+                self.draw_end(temp, tree, end)
+            del temp
+            self.DrawLinePoint(line_start, line_end)
+            max_width = max(max_width, self_width + new_width)
+            total_height += new_height
 
         return (
             max_width,
@@ -295,12 +343,47 @@ class NiftyPaintDC(wx.BufferedPaintDC):
             )
         )
 
+    
+    def draw_end(self, point, tree, start):
+
+        assert isinstance(start, garlicsim.data_structures.End)
+        
+        bitmap = self.tree_browser.elements['Untouched End']
+        self.DrawBitmapPoint(bitmap, point, useMask=True)
+        bitmap_size = bitmap.GetSize()
+
+        temp = (point[0],
+                point[1],
+                point[0] + bitmap_size[0],
+                point[1] + bitmap_size[1])
+        
+        self.clickable_map[temp] = start
+        
+        last_height = 0
+        total_height = 0
+        self_width = bitmap_size[0] + connector_length
+        max_width = self_width
+        line_start = vectorish.add(
+            point,
+            (
+                bitmap_size[0] - 1,
+                bitmap_size[1] // 2
+            )
+        )
+        
+        
+
+        return (
+            max_width,
+            max(
+                total_height,
+                bitmap_size[1] + connector_length
+            )
+        )
+    
     def draw_tree(self, tree):
         '''
         Draw the tree.
-        
-        This will only use the part of the tree that springs from the first
-        root!
         '''
 
         if self.gui_project:

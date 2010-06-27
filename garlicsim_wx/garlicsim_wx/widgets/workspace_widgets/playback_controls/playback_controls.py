@@ -68,6 +68,7 @@ class PlaybackControls(wx.Panel, WorkspaceWidget):
         WorkspaceWidget.__init__(self, frame)
         
         #self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM)
+        self.SetBackgroundColour(wx.Color(212, 208, 200))
         
         assert isinstance(self.gui_project, garlicsim_wx.GuiProject)
         # I put this assert mainly for better source assistance in Wing.
@@ -79,6 +80,8 @@ class PlaybackControls(wx.Panel, WorkspaceWidget):
         self.inner_panel = wx.Panel(self, -1, size=(184, 124))
         '''The panel that contains all the subwidgets.'''
         
+        self.inner_panel.SetBackgroundColour(wx.Color(212, 208, 200))
+        
         self.center_button_mode = PlayMode
         '''The current mode of the center button.'''
 
@@ -88,9 +91,14 @@ class PlaybackControls(wx.Panel, WorkspaceWidget):
         
         bitmaps_dict = self.bitmap_dict = {}
         for bitmap_name in bitmap_list:
-            path = pkg_resources.resource_filename(images_package,
-                                                   bitmap_name + '.png')
-            self.bitmap_dict[bitmap_name] = wx.Bitmap(path, wx.BITMAP_TYPE_ANY)
+            stream = pkg_resources.resource_stream(images_package,
+                                                 bitmap_name + '.png')
+            self.bitmap_dict[bitmap_name] = wx.BitmapFromImage(
+                wx.ImageFromStream(
+                    stream,
+                    wx.BITMAP_TYPE_ANY
+                )
+            )
             
         
         self.center_button_bitmap_dict = {
@@ -221,7 +229,7 @@ class PlaybackControls(wx.Panel, WorkspaceWidget):
             self.gui_project.emitter_system.make_emitter(
                 inputs=(
                     self.gui_project.playing_toggled_emitter,
-                    self.gui_project.active_node_changed_emitter,
+                    self.gui_project.active_node_changed_or_modified_emitter,
                     self.gui_project.active_node_finalized_emitter
                 ),
                 outputs=(

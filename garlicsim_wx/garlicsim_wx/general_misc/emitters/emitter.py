@@ -10,8 +10,12 @@ See its documentation for more info.
 # todo: there should probably be some circularity check. Maybe actually
 # circularity should be permitted?
 
+# todo: make some way to emit from multiple emitters simulataneously, saving
+# redundant calls to shared callable outputs.
+
 import itertools
 from garlicsim.general_misc import cute_iter_tools
+from garlicsim.general_misc import misc_tools
         
 
 class Emitter(object):
@@ -197,7 +201,8 @@ class Emitter(object):
         '''Remove an output from this emitter.'''
         assert isinstance(thing, Emitter) or callable(thing)
         self._outputs.remove(thing)
-        emitter._inputs.remove(self)
+        if isinstance(thing, Emitter):
+            thing._inputs.remove(self)
         self._recalculate_total_callable_outputs_recursively()
         
     def disconnect_from_all(self): # todo: use the freeze here
@@ -243,9 +248,18 @@ class Emitter(object):
             callable_output()
     
     def __repr__(self):
-        return '<%s.%s %sat %s>' % (
-            self.__class__.__module__,
-            self.__class__.__name__,
+        '''
+        Get a string representation of the emitter.
+        
+        Example output:        
+        <garlicsim_wx.general_misc.emitters.emitter.Emitter 'tree_modified' at
+        0x1c013d0>
+        '''
+        return '<%s %sat %s>' % (
+            misc_tools.shorten_class_address(
+                       self.__class__.__module__,
+                       self.__class__.__name__
+                       ),
             ''.join(("'", self.name, "' ")) if self.name else '',
             hex(id(self))
         )

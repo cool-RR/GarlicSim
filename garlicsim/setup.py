@@ -3,18 +3,20 @@
 # Copyright 2009-2010 Ram Rachum.
 # This program is distributed under the LGPL2.1 license.
 
-'''
-Setuptools setup file for garlicsim.
-'''
+'''Setuptools setup file for garlicsim.'''
 
 import os
 import setuptools
-import distutils # Just for deleting the "build" directory.
+import sys
 
-try:
-    distutils.dir_util.remove_tree('build', verbose=True)
-except Exception:
-    pass
+
+if sys.version_info[0] >= 3:
+    raise Exception('''This package is not compatible with Python 3.x. Use \
+`garlicsim_py3` instead.''')
+if sys.version_info[1] <= 4:
+    raise Exception('''This package requires Python 2.5 and upwards. (Not \
+including 3.x).''')
+
 
 def get_packages():
     return ['garlicsim.' + p for p in
@@ -44,15 +46,17 @@ my_classifiers = [
 
 setuptools.setup(
     name='garlicsim',
-    version='0.4',
+    version='0.5',
     description='Pythonic framework for working with simulations',
     author='Ram Rachum',
     author_email='cool-rr@cool-rr.com',
     url='http://garlicsim.org',
     packages=get_packages(),
+    scripts=['garlicsim/scripts/start_simpack.py'],
     license="LGPL v2.1",
     long_description = my_long_description,
     classifiers = my_classifiers,
     include_package_data = True,
+    zip_safe=False,
 )
 

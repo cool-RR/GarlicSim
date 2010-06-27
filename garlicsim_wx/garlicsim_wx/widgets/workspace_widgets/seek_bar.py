@@ -17,6 +17,7 @@ from garlicsim_wx.general_misc.flag_raiser import FlagRaiser
 
 from garlicsim_wx.widgets import WorkspaceWidget
 import garlicsim
+import garlicsim_wx
 
 
 __all__ = ["SeekBar"]
@@ -24,7 +25,7 @@ __all__ = ["SeekBar"]
 
 class SeekBar(wx.Panel, WorkspaceWidget):
     '''
-    A seek-bar widget.
+    Seek-bar widget, allowing navigation and visualization of the active path.
     
     The seek-bar is attached to a path. It shows what time period the path
     spans. It shows which node is currently active. It allows to move to any
@@ -50,18 +51,23 @@ class SeekBar(wx.Panel, WorkspaceWidget):
         
         self.unscreenify = lambda x: (x/self.zoom)+self.start
         '''Translate from on-screen coordinate to time point.'''
+        
+        self.menu = garlicsim_wx.general_misc.cute_menu.CuteMenu.add_menus(
+            [garlicsim_wx.misc.menu_bar.node_menu.NodeMenu(self.frame),
+             garlicsim_wx.misc.menu_bar.block_menu.BlockMenu(self.frame)]
+        )
 
         self.was_playing_before_mouse_click = None
         self.was_playing_before_mouse_click_but_then_paused_and_mouse_left = None
         self.active_triangle_width = 13 # Must be odd number
 
         self.view_changed_flag = False
-        self.active_node_changed_flag = False
+        self.active_node_changed_or_modified_flag = False
         self.path_contents_changed_flag = False
         
         self.view_change_emitter = emitters.Emitter()
-        self.gui_project.active_node_changed_emitter.add_output(
-            FlagRaiser(self, 'active_node_changed_flag')
+        self.gui_project.active_node_changed_or_modified_emitter.add_output(
+            FlagRaiser(self, 'active_node_changed_or_modified_flag')
         )
         self.gui_project.path_contents_changed_emitter.add_output(
             FlagRaiser(self, 'path_contents_changed_flag')
@@ -74,7 +80,7 @@ class SeekBar(wx.Panel, WorkspaceWidget):
         
 
         self.view_changed_flag = False
-        self.active_node_changed_flag = False
+        self.active_node_changed_or_modified_flag = False
         self.path_contents_changed_flag = False
         # todo: now we just lower these flags retardedly, in future there will
         # be __recalculate
@@ -196,7 +202,7 @@ class SeekBar(wx.Panel, WorkspaceWidget):
 
     def on_mouse_event(self, e):
         #todo: should catch drag to outside of the window        
-        #print(dir(e))
+        # todo: use EVT_CONTEXT_MENU, in tree browser and others too
         if e.RightDown():
             self.gui_project.stop_playing()
 
@@ -219,7 +225,7 @@ class SeekBar(wx.Panel, WorkspaceWidget):
 
             if self.gui_project.active_node is not None:
                 self.gui_project.frame.Refresh()
-                self.PopupMenu(self.gui_project.get_node_menu(), e.GetPosition())
+                self.PopupMenu(self.menu, e.GetPosition())
 
 
 

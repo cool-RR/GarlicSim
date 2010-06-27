@@ -7,6 +7,11 @@ A module that defines the State class.
 See its documentation for more info.
 '''
 
+from garlicsim.general_misc import misc_tools
+
+import garlicsim
+
+
 class State(object):
     '''
     A state describes a world state in the world of the simulation.
@@ -23,19 +28,34 @@ class State(object):
     to it.
     '''
     
+    def __new__(cls, *args, **kwargs):
+        if cls is State:
+            raise garlicsim.misc.GarlicSimException('''You tried to create a \
+State object whose class is `garlicsim.data_structures.State`. This is \
+unallowed; This class should be used as a base class for State classes in \
+simpacks.''')
+        return super(type, cls).__new__(cls)
+    
+    
     def __repr__(self):
         '''
         Get a string representation of the state.
         
         Example output:
-        <garlicsim.data_structures.state.State with clock 32.3 at 0x1c822d0>
-        '''
-        return '<%s.%s %sat %s>' % \
+        <garlicsim.data_structures.State with clock 32.3 at 0x1c822d0>
+        ''' 
+        return '<%s %sat %s>' % \
                (
-                   self.__class__.__module__,
-                   self.__class__.__name__,
+                   misc_tools.shorten_class_address(
+                       self.__class__.__module__,
+                       self.__class__.__name__
+                       ),
                    'with clock %s ' % self.clock if hasattr(self, 'clock') \
                                       else '',
                    hex(id(self))
                )
+
+    create_root = None
+    create_messy_root = None
+    # Just so we could easily check whether a subclass implemented these.
         

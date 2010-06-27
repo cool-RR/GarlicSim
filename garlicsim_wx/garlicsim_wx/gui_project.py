@@ -19,12 +19,13 @@ import wx
 import wx.lib.scrolledpanel
 import wx.py.shell
 
-import garlicsim.general_misc.queue_tools as queue_tools
-import garlicsim.general_misc.dict_tools as dict_tools
+from garlicsim.general_misc import queue_tools
+from garlicsim.general_misc import dict_tools
 from general_misc.stringsaver import s2i,i2s
 from garlicsim.general_misc.infinity import Infinity
 from garlicsim.general_misc import binary_search
-import garlicsim_wx.general_misc.thread_timer as thread_timer
+from garlicsim_wx.general_misc import thread_timer
+from garlicsim_wx.general_misc import wx_tools
 
 import garlicsim
 from garlicsim.asynchronous_crunching import crunchers
@@ -33,51 +34,63 @@ from garlicsim_wx.general_misc import emitters
         
 
 class GuiProject(object):
-    '''
-    Encapsulates a project for use with a wxPython interface.
-    '''
+    '''Encapsulates a project for use with a wxPython interface.'''
     
-    def __init__(self, simpack, frame):
+    def __init__(self, simpack, frame, project=None, virgin=True):
         '''
         Construct the gui project.
         
         `simpack` is the simpack (or grokker) to use. `frame` is the frame in
-        which this gui project will live.
+        which this gui project will live. `virgin` should remain True in normal
+        usage, it's set to False only when loading a GuiProject from file.
         '''
         # This is broken down into a few parts.
-        self.__init_general(simpack, frame)
+        self.__init_general(simpack, frame, project)
         self.__init_gui()
-        self.__init_on_creation()
+        if virgin:
+            self.__init_virgin()
 
+    
+    @staticmethod
+    def load_from_vars(frame, picklable_vars):
+        '''Take vars that were just unpickled and build a GuiProject from them.'''
+
+        simpack, project = (
+            picklable_vars['simpack'],
+            picklable_vars['project']
+        )
         
-    def __init_general(self, simpack, frame, project=None,
-                       active_node=None, path=None):
+        gui_project = GuiProject(simpack, frame, project, virgin=False)
+        
+        for (key, value) in picklable_vars.iteritems():
+            setattr(gui_project, key, value)
+        
+        return gui_project
+    
+        
+    def __init_general(self, simpack, frame, project=None):
         '''General initialization.'''
         
         self.frame = frame
         '''The frame that this gui project lives in.'''
         
-        
         if isinstance(simpack, garlicsim.misc.SimpackGrokker):
-            
-            self.simpack_grokker = simpack
-            
-            self.simpack = self.simpack_grokker.simpack
-            
+            simpack_grokker = simpack            
+            simpack = simpack_grokker.simpack
         else:
+            simpack_grokker = garlicsim.misc.SimpackGrokker(simpack)
             
-            self.simpack = simpack
-            '''The simpack used for this gui project.'''
             
-            self.simpack_grokker = \
-                garlicsim.misc.SimpackGrokker(simpack)
-            '''The simpack grokker used for this gui project.'''
-            
-            self.simpack_wx_grokker = \
-                garlicsim_wx.misc.SimpackWxGrokker(simpack)
-            '''The simpack_wx used for this gui project.'''
+        self.simpack = simpack
+        '''The simpack used for this gui project.'''
         
-        self.project = project or garlicsim.Project(self.simpack_grokker)
+        self.simpack_grokker = simpack_grokker
+        '''The simpack grokker used for this gui project.'''
+        
+        self.simpack_wx_grokker = garlicsim_wx.misc.SimpackWxGrokker(simpack)
+        '''The simpack_wx used for this gui project.'''
+        
+        self.project = project or garlicsim.Project(simpack_grokker)
         '''The project encapsulated in this gui project.'''
         
 
@@ -91,10 +104,10 @@ class GuiProject(object):
         
         #######################################################################
             
-        self.path = path
+        self.path = None
         '''The active path.'''
 
-        self.active_node = active_node
+        self.active_node = None
         '''The node that is currently displayed onscreen.'''
 
         self.is_playing = False
@@ -144,9 +157,11 @@ class GuiProject(object):
         '''
 
         self.__init_emitters()
+        self.__init_menu_enablings()
         
         self.emitter_system.top_emitter.emit()
         # Just for good measure, jiggle all the widgets up.
+        
         
     def __init_emitters(self):
         '''Create an emitter system and a bunch of emitters.'''
@@ -220,6 +235,18 @@ class GuiProject(object):
             )
             # todo: should possibly take input from pseudoclock_modified_emitter
             
+            self.active_node_modified_emitter = es.make_emitter(
+                name='active_node_modified'
+            )
+            
+            self.active_node_changed_or_modified_emitter = es.make_emitter(
+                name='active_node_changed_or_modified',
+                inputs=(
+                    self.active_node_changed_emitter,
+                    self.active_node_modified_emitter,
+                )
+            )
+            
             self.path_changed_emitter = es.make_emitter(
                 name='path_changed'
             )
@@ -250,32 +277,70 @@ class GuiProject(object):
                 )
             
             self.active_node_finalized_emitter = es.make_emitter(
+                inputs=(self.active_node_modified_emitter,),
                 outputs=(self.tree_modified_on_path_emitter,), # todo: correct?
                 name='active_node_finalized',
             )
             
-            
-            
             #todo: maybe need an emitter for when editing a state?
+            
+            ###################################################################
+                        
+            self.all_menus_need_recalculation_emitter = es.make_emitter(
+                outputs=(self.frame._recalculate_all_menus,),
+                name='all_menus_need_recalculation_emitter'
+            )
+
     
+    def __init_menu_enablings(self):
+        '''Connect the functions that (en/dis)able menus to the emitters.'''
+        for menu in [self.frame.menu_bar.node_menu,
+                     self.frame.menu_bar.block_menu]:
+            
+            self.active_node_changed_or_modified_emitter.add_output(
+                menu._recalculate
+            )
+        
+            
+    def __init_gui(self):
+        '''
+        Initialization related to the widgets which make up the gui project.
+        '''
+        
+        self.frame.Bind(wx.EVT_MENU, self.fork_by_editing,
+                         id=s2i("Fork by editing"))
+        self.frame.Bind(wx.EVT_MENU, self.fork_by_crunching,
+                         id=s2i("Fork by crunching"))
+        
+        
+    def __init_virgin(self):
+        '''
+        Initialization done when gui project is actually created, not loaded.
+        '''
+        wx.CallAfter(self.make_state_creation_dialog)
+        
 
     def set_path(self, path):
         '''Set the path.'''
         self.path = path
         self.path_changed_emitter.emit()
         
+        
     def set_official_playing_speed(self, value):
         '''Set the official playing speed.'''
         self.official_playing_speed = value
         self.official_playing_speed_modified_emitter.emit()
 
+        
     def _set_pseudoclock(self, value):
         '''Set the pseudoclock. Internal use.'''
         if self.pseudoclock != value:
             self.pseudoclock = value
             self.pseudoclock_modified_emitter.emit()
-        
-    def set_pseudoclock(self, desired_pseudoclock, rounding=binary_search.LOW):
+
+            
+    def set_pseudoclock(self, desired_pseudoclock,
+                        rounding=binary_search.LOW_OTHERWISE_HIGH):
         '''
         Attempt to set the pseudoclock to a desired value.
         
@@ -283,38 +348,38 @@ class GuiProject(object):
         of the closest edge node.
         
         The active node will be changed to one which is close to the desired
-        pseudoclock. In `rounding` use `binary_search.LOW` to get the node just
-        below, or `binary_search.HIGH` to get the node just above.
+        pseudoclock. In `rounding` use `binary_search.LOW_OTHERWISE_HIGH` to get
+        the node just below, or `binary_search.HIGH_OTHERWISE_LOW` to get the
+        node just above.
         
-        Note that if you choose `LOW`, and there's nothing below, only above,
-        you'll get the one above. Same for `HIGH`.
+        See documentation for these two options for more details.
         '''
+        # todo: check that everything that should use this does use this
 
-        assert rounding in (binary_search.LOW, binary_search.HIGH)
-        # may add CLOSEST and EXACT later
+        assert rounding in (binary_search.LOW_OTHERWISE_HIGH,
+                            binary_search.HIGH_OTHERWISE_LOW)
         
         both_nodes = self.path.get_node_by_clock(desired_pseudoclock,
                                                  rounding=binary_search.BOTH)
         
-        if rounding is binary_search.HIGH:
-            both_nodes = (both_nodes[1], both_nodes[0])
-            # Just swapping the nodes. Simpler than having a big `if` for `HIGH`
-            # and `LOW`.
-            
-        none_count = list(both_nodes).count(None)
+        binary_search_profile = binary_search.BinarySearchProfile(
+            self.path, 
+            lambda node: node.state.clock,
+            desired_pseudoclock,
+            both_nodes
+        )
         
-        if none_count == 0:
-            node = both_nodes[0]
-            self._set_active_node(node)
+        node = binary_search_profile.results[rounding]
+        
+        if node is None:
+            return # todo: Not sure if I should raise something
+        
+        self._set_active_node(node)
+        
+        if binary_search_profile.is_surrounded:
             self._set_pseudoclock(desired_pseudoclock)
-        elif none_count == 1:
-            node = both_nodes[0] or both_nodes[1]
-            self._set_active_node(node)
-            self._set_pseudoclock(node.state.clock)
         else:
-            assert both_nodes == (None, None)
-            # path is completely empty! Not sure if I should raise something
-            return
+            self._set_pseudoclock(node.state.clock)
         
         self.project.ensure_buffer(node, clock_buffer=self.default_buffer)
 
@@ -325,28 +390,11 @@ class GuiProject(object):
 
         
     def update_defacto_playing_speed(self):
+        '''Update the defacto playing speed to the official playing speed.'''
         # In the future this will check if someone's temporarily tweaking the
         # defacto speed, and let that override.
         self.defacto_playing_speed = self.official_playing_speed
         
-    def __init_gui(self):
-        '''
-        Initialization related to the widgets which make up the gui project.
-        '''
-        
-        self.frame.Bind(wx.EVT_MENU, self.edit_from_active_node,
-                         id=s2i("Fork by editing"))
-        self.frame.Bind(wx.EVT_MENU, self.fork_naturally,
-                         id=s2i("Fork naturally"))
-        
-
-        
-    def __init_on_creation(self):
-        '''
-        Initialization done when gui project is actually created, not loaded.
-        '''
-        wx.CallAfter(self.make_state_creation_dialog)
-
     
     def make_state_creation_dialog(self):
         '''Create a dialog for creating a root state.'''
@@ -355,6 +403,7 @@ class GuiProject(object):
         state = dialog.start()
         if state:
             root = self.project.root_this_state(state)
+            self.tree_structure_modified_not_on_path_emitter.emit()
             self.set_active_node(root)
         
 
@@ -363,47 +412,13 @@ class GuiProject(object):
         return self.active_node.state if self.active_node is not None else None
                 
 
-    def make_plain_root(self, *args, **kwargs):
-        '''
-        Create a parentless node, whose state is a simple plain state.
-        
-        The simpack must define the function "make_plain_state" for this to
-        work.
-        
-        Updates the active path to start from this root. Starts crunching on
-        this new root.
-        
-        Returns the node.
-        '''
-        root = self.project.make_plain_root(*args, **kwargs)
-        self.tree_structure_modified_not_on_path_emitter.emit()
-        self.set_active_node(root)
-        return root
-
     
-    def make_random_root(self, *args, **kwargs):
-        '''
-        Create a parentless node, whose state is a random and messy state.
-        
-        The simpack must should define the function "make_random_state" for this
-        to work.
-        
-        Updates the active path to start from this root. Starts crunching on
-        this new root.
-        
-        Returns the node.
-        '''
-        root = self.project.make_random_root(*args, **kwargs)
-        self.tree_structure_modified_not_on_path_emitter.emit()
-        self.set_active_node(root)
-        return root
-
-
     def _set_active_node(self, node):
         '''Set the active node, displaying it onscreen. Internal use.'''
-        if self.active_node != node:
-            self.active_node = node
+        if self.active_node is not node:
+            self.active_node = node        
             self.active_node_changed_emitter.emit()
+
         
     
     def set_active_node(self, node, modify_path=True):
@@ -433,11 +448,12 @@ class GuiProject(object):
             self.__modify_path_to_include_active_node()
             
         if modify_path and was_playing:
-            self.infinity_job.crunching_profile.clock_target = \
-                self.infinity_job.node.state.clock + self.default_buffer
-            self.infinity_job = self.project.ensure_buffer_on_path(node,
-                                                                   self.path,
-                                                                   Infinity)   
+            if self.infinity_job:
+                self.infinity_job.crunching_profile.clock_target = \
+                    self.infinity_job.node.state.clock + self.default_buffer
+                self.infinity_job = self.project.ensure_buffer_on_path(node,
+                                                                       self.path,
+                                                                       Infinity)   
         
 
         
@@ -490,9 +506,9 @@ class GuiProject(object):
         
         self.is_playing = False
         
-        assert self.infinity_job is not None
-        self.infinity_job.crunching_profile.clock_target = \
-            self.infinity_job.node.state.clock + self.default_buffer
+        if self.infinity_job:
+            self.infinity_job.crunching_profile.clock_target = \
+                self.infinity_job.node.state.clock + self.default_buffer
         
         self.last_tracked_real_time = None
         self.round_pseudoclock_to_active_node()
@@ -512,7 +528,7 @@ class GuiProject(object):
         node = self.active_node
         state = node.state
         if (node.touched is False) or (node.still_in_editing is False):
-            new_node = self.edit_from_active_node()
+            new_node = self.fork_by_editing()
             return new_node.state
         else:
             return state
@@ -538,15 +554,16 @@ class GuiProject(object):
             (real_time_elapsed * self.defacto_playing_speed)
         
 
-        rounding = binary_search.LOW if self.defacto_playing_speed > 0 \
-                 else binary_search.HIGH
+        rounding = binary_search.LOW_OTHERWISE_HIGH \
+                 if self.defacto_playing_speed > 0 \
+                 else binary_search.HIGH_OTHERWISE_LOW
         
         self.set_pseudoclock(desired_pseudoclock, rounding)
 
         self.last_tracked_real_time = current_real_time
         
 
-    def fork_naturally(self, e=None):
+    def fork_by_crunching(self, e=None):
         '''
         Fork the simulation from the active node.
         
@@ -559,7 +576,7 @@ class GuiProject(object):
         self.project.begin_crunching(self.active_node, self.default_buffer)
 
 
-    def edit_from_active_node(self, e=None):
+    def fork_by_editing(self, e=None):
         '''
         Fork the simulation from the active node by editing.
         
@@ -569,7 +586,6 @@ class GuiProject(object):
         # todo: maybe not restrict it to "from_active_node"?
         new_node = \
             self.project.tree.fork_to_edit(template_node=self.active_node)
-        new_node.still_in_editing = True #todo: should be in `fork_to_edit` ?
         self.tree_structure_modified_on_path_emitter.emit()
         self.set_active_node(new_node)
         return new_node
@@ -590,69 +606,99 @@ class GuiProject(object):
         process.
         '''
         
-        feisty_jobs = [job for job in self.project.crunching_manager.jobs
-                       if not job.node.is_last_on_block()]
-        # Feisty jobs are jobs that might result in a structure change in the
-        # tree.
-        # todo: this logic works wrong. Can improve it.
-        fesity_jobs_to_nodes = dict((job, job.node) for job in feisty_jobs)
+        # This method basically has two tasks. The first one is to take work
+        # from the crunchers and retire/recruit/redirect them as necessary. This
+        # is done by `Project.sync_crunchers`, which we call here, so that's not
+        # the tricky part here.
+        #
+        # The second task is the tricky part. We want to know just how much the
+        # tree was modified during this action. And the tricky thing is that
+        # `Project.sync_crunchers` won't do that for us, so we're going to have
+        # to try to deduce how much the tree modified ourselves, just by looking
+        # at the `jobs` list before and after calling `Project.sync_crunchers`.
+        #
+        # And when I say "to know how much the tree modified", I mean mainly to
+        # know if the modification is a structural modification, or just some
+        # blocks getting fatter. And the reason we want to know this is so we'll
+        # know whether to update various workspace widgets.
         
+        jobs = self.project.crunching_manager.jobs
+        
+        jobs_to_nodes = dict((job, job.node) for job in jobs)
 
-        added_nodes = self.project.sync_crunchers()
-        
+                
+        added_nodes = self.project.sync_crunchers()        
         # This is the heavy line here, which actually executes the Project's
-        # sync_crunchers function.
+        # `sync_crunchers` function.
         
         
-        if added_nodes > 0:
-            if any(fesity_jobs_to_nodes[job] is not job.node
-                   for job in feisty_jobs):
-                self.tree_structure_modified_at_unknown_location_emitter.emit()
-            else:
-                self.tree_modified_at_unknown_location_emitter.emit()
-            # todo: It would be hard but nice to know whether the tree changes
-            # were on the path. This could save some rendering on SeekBar.
+        if any(
+            (job not in jobs) or \
+            (job.node.soft_get_block() is not old_node.soft_get_block())
+            for job, old_node in jobs_to_nodes.iteritems()
+               ):
+
+            # What does this codition mean?
+            # 
+            # It means that there is at least one job that either:
+            # (a) Was removed from the jobs list, or
+            # (b) Changed the soft block it's pointing to.            
+            #
+            # The thing is, if there was a structural modification in the tree,
+            # this condition must be True. Therefore we call this here:
+            
+            self.tree_structure_modified_at_unknown_location_emitter.emit()
+            
+            # Even though we are not sure that the tree structure was modified;
+            # We have to play it safe. And since this condition doesn't happen
+            # most of the time when crunching, we're not wasting too much
+            # rendering time by assuming this is a structural modification.
+            
+            # Note that we didn't check if `added_nodes > 0`: This is because if
+            # an `End` was added to the tree, it wouldn't have been counted in
+            # `added_nodes`.
+            
+        elif added_nodes > 0:
+            
+            # If this condition is True, we know as a fact that there was no
+            # structural modification, and we know as a fact that some blocks
+            # have gotten fatter.
+            
+            self.tree_modified_at_unknown_location_emitter.emit()
+            
+        # todo: It would be hard but nice to know whether the tree changes were
+        # on the path. This could save some rendering on SeekBar.
             
         return added_nodes
-
-
-    def get_node_menu(self):
-        '''
-        Get the node menu.
-        
-        The node menu lets you do actions with the active node.
-        '''
-        nodemenu = wx.Menu()
-        nodemenu.Append(
-            s2i("Fork by editing"),
-            "Fork by &editing",
-            " Create a new edited node with the current node as the template"
-        )
-        nodemenu.Append(
-            s2i("Fork naturally"),
-            "Fork &naturally",
-            " Run the simulation from this node"
-        )
-        nodemenu.AppendSeparator()
-        nodemenu.Append(
-            s2i("Delete..."),
-            "&Delete...",
-            " Delete the node"
-        )
-        return nodemenu
 
     
     def finalize_active_node(self):
         '''Finalize the changes made to the active node.'''
-        node = self.active_node
-        if node.still_in_editing is False:
-            raise Exception('''You tried to finalize active state, but you \
-            were not in editing mode.''') # change to fitting exception class
-        node.still_in_editing = False
+        self.active_node.finalize()
         
         self.active_node_finalized_emitter.emit()
         
-        self.project.ensure_buffer(node, self.default_buffer)
+        self.project.ensure_buffer(self.active_node, self.default_buffer)
 
+        
+    def __getstate__(self):
+        my_dict = dict(self.__dict__)
+        
+        del my_dict['frame']
+        del my_dict['timer_for_playing']
+        del my_dict['simpack_grokker']
+        del my_dict['simpack_wx_grokker']
 
+        for (key, value) in my_dict.items():
+            
+            if isinstance(value, emitters.Emitter) or \
+               isinstance(value, emitters.EmitterSystem):
+                
+                del my_dict[key]
+            
+        return my_dict
+
+    
+    def __setstate__(self, pickled_project):
+        raise Exception
     

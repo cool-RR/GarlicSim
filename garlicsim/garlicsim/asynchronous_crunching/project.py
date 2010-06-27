@@ -12,8 +12,8 @@ from __future__ import with_statement
 from garlicsim.general_misc import cute_iter_tools
 import garlicsim.general_misc.read_write_lock
 from garlicsim.general_misc.infinity import Infinity
-import garlicsim.general_misc.module_wrapper
 import garlicsim.general_misc.third_party.decorator
+from garlicsim.general_misc import misc_tools
 
 import garlicsim.data_structures
 import garlicsim.misc.simpack_grokker
@@ -72,30 +72,32 @@ class Project(object):
         self.crunching_manager = CrunchingManager(self)
     
 
-    def make_plain_root(self, *args, **kwargs):
+    def create_root(self, *args, **kwargs):
         '''
         Create a parentless node whose state is a simple plain state.
         
-        The simulation package has to define the function `make_plain_state`
-        for this to work.
+        The simulation package has to define the method `State.create_root` for
+        this to work.
         
         Returns the node.
         '''
-        state = self.simpack.make_plain_state(*args, **kwargs)
+        state = self.simpack.State.create_root(*args, **kwargs)
         return self.root_this_state(state)
 
-    def make_random_root(self, *args, **kwargs):
+    
+    def create_messy_root(self, *args, **kwargs):
         '''
         Creates a parentless node whose state is a random and messy state.
         
-        The simulation package has to define the function `make_random_state`
-        for this to work.
+        The simulation package has to define the method
+        `State.create_messy_root` for this to work.
         
         Returns the node.
         '''
-        state = self.simpack.make_random_state(*args, **kwargs)
+        state = self.simpack.State.create_messy_root(*args, **kwargs)
         return self.root_this_state(state)
 
+    
     def root_this_state(self, state):
         '''
         Take a state, wrap it in a node and add to the tree without a parent.
@@ -104,6 +106,7 @@ class Project(object):
         '''
         return self.tree.add_state(state)
 
+    
     def ensure_buffer(self, node, clock_buffer=0):
         '''
         Ensure there's a large enough buffer of nodes after `node`.
@@ -115,6 +118,10 @@ class Project(object):
         '''
         leaves_dict = node.get_all_leaves(max_clock_distance=clock_buffer)
         new_clock_target = node.state.clock + clock_buffer
+        
+        for leaf in leaves_dict.copy():
+            if leaf.ends: # todo: Not every end should count.
+                del leaves_dict[leaf]
         
         for item in leaves_dict.items():
 
@@ -145,6 +152,9 @@ class Project(object):
         '''
         
         leaf = path.get_last_node(start=node)
+        if leaf.ends: # todo: Not every end should count, I think.
+            return
+        
         new_clock_target = node.state.clock + clock_buffer     
 
         jobs_of_leaf = self.crunching_manager.get_jobs_by_node(leaf)
@@ -163,7 +173,23 @@ class Project(object):
             job = Job(leaf, crunching_profile)
             self.crunching_manager.jobs.append(job)
             return job
-          
+
+        
+    def fork_to_edit(self, template_node):
+        '''
+        "Duplicate" the node, marking the new one as touched.
+        
+        The new node will have the same parent as `template_node`. The state of
+        the new node is usually modified by the user after it is created, and
+        after that the node is finalized and used in simulation.
+        
+        This is useful when you want to make some changes in the world state and
+        see what they will cause in the simulation.
+        
+        Returns the node.
+        '''
+        return self.tree.fork_to_edit(template_node)
+
     
     def begin_crunching(self, node, clock_buffer=None, *args, **kwargs):
         '''
@@ -206,6 +232,7 @@ class Project(object):
         '''        
         return self.crunching_manager.sync_crunchers()
     
+    
     @with_tree_lock
     def simulate(self, node, iterations=1, *args, **kwargs):
         '''
@@ -228,6 +255,7 @@ class Project(object):
         else:
             return self.__non_history_dependent_simulate(node, iterations,
                                                          step_profile)
+        
         
     @with_tree_lock        
     def __history_dependent_simulate(self, node, iterations,
@@ -256,13 +284,29 @@ class Project(object):
         finite_iterator = cute_iter_tools.shorten(iterator, iterations)
         
         current_node = node
+        first_run = True
         for current_state in finite_iterator:
             current_node = self.tree.add_state(current_state,
                                                parent=current_node,
                                                step_profile=step_profile)
             history_browser.end_node = current_node
+            if first_run:
+                history_browser.path = current_node.make_containing_path()
+                # Just once, after the first run, we set the path of the history
+                # browser to be the new end_node's path. Why?
+                
+                # Because just after the first run we've created the first new
+                # node, possibly causing a fork. Because of the new fork, the
+                # original path that we created at the beginning of this method
+                # will get confused and take the old timeline instead of the new
+                # timeline. (And it wouldn't even have the end_node to stop it,
+                # because that would be on the new timeline.) So we create a new
+                # path for the history browser. We only need to do this once,
+                # because after the first node we work on one straight timeline
+                # and we don't fork the tree any more.
             
         return current_node
+    
     
     @with_tree_lock
     def __non_history_dependent_simulate(self, node, iterations,
@@ -296,6 +340,7 @@ class Project(object):
             
         return current_node
     
+    
     def __getstate__(self):
         my_dict = dict(self.__dict__)
         
@@ -304,17 +349,20 @@ class Project(object):
         
         return my_dict
     
+    
     def __setstate__(self, pickled_project):
         self.__init__(pickled_project["simpack"])
         self.__dict__.update(pickled_project)
+        
         
     def __repr__(self):
         '''
         Get a string representation of the project.
         
         Example output:
-        <garlicsim.asynchronous_crunching.project.Project containing 101 nodes
-        and employing 4 crunchers at 0x1f668d0>
+        
+        <garlicsim.Project containing 101 nodes and employing 4 crunchers at
+        0x1f668d0>
         '''
         # Todo: better have the simpack mentioned here, not doing it cause it's
         # currently in a module wrapper.
@@ -322,11 +370,13 @@ class Project(object):
         nodes_count = len(self.tree.nodes)
         crunchers_count = len(self.crunching_manager.crunchers)
                                    
-        return '''<%s.%s containing %s nodes and employing %s crunchers at \
+        return '''<%s containing %s nodes and employing %s crunchers at \
 %s>''' % \
                (
-                   self.__class__.__module__,
-                   self.__class__.__name__,
+                   misc_tools.shorten_class_address(
+                       self.__class__.__module__,
+                       self.__class__.__name__
+                   ),
                    nodes_count,
                    crunchers_count,
                    hex(id(self))

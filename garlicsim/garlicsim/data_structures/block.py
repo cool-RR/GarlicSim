@@ -8,9 +8,11 @@ See the documentation of Block for more information.
 '''
 
 from garlicsim.general_misc import logic_tools
+from garlicsim.general_misc import misc_tools
 
 from garlicsim.misc import GarlicSimException
 
+from tree_member import TreeMember
 # We are doing `from node import Node` in the bottom of the file.
 
 __all__ = ["Block", "BlockError"]
@@ -20,10 +22,9 @@ class BlockError(GarlicSimException):
     '''Block-related exception.'''
 
     
-class Block(object):
+class Block(TreeMember):
     '''
-    A device for bundling together a succession of natural nodes.
-    
+    Succession of similar natural nodes in the tree.
     
     Blocks make the tree more organized and easy to browse, and improve
     performance.
@@ -36,22 +37,24 @@ class Block(object):
     Who qualifies to get wrapped in a block? A succession of untouched nodes,
     which:
         1. Is at least 2 nodes in number.
-        2. All members, except the last one, must have no children except
-           their successor in the block.
-        3. The last node may have any kinds of children.
+        2. All members, except the last one, must have no ends, and no
+           children except their successor in the block.
+        3. The last node may have any kinds of children and ends.
         4. All members share the same step_profile.
 
     If you want to check whether a certain node is in a block or not,
     check its ".block" attribute.
 
     '''
-    # todo: maybe Node and Block should inherit from some BaseTreeMember
     def __init__(self, node_list):
         '''Construct a block from the members of node_list.'''
         self.alive = True
         self.__node_list = []
         self.add_node_list(node_list)
 
+    def soft_get_block(self):
+        return self
+    
     def append_node(self, node):
         '''
         Append a single node to the block.
@@ -286,36 +289,127 @@ while the index was bigger than the block's length.''')
         assert self.alive
         return self.__node_list[0].step_profile
      
-    def is_overlapping(self, other):
+    def is_overlapping(self, tree_member):
         '''
-        Return whether this block overlaps with the given entity.
+        Return whether this block overlaps with the given tree member.
         
-        `other` may be a block, in which case overlapping means being the same
-        block. `other` can also be a node, in which case overlapping means the
-        node is contained in this block.
+        `tree_member` may be a block, in which case overlapping means being the
+        same block. `tree_member` can also be a node, in which case overlapping
+        means the node is contained in this block.
         '''
         assert self.alive
         
-        if other is None: return False
-        if isinstance(other, Block):
-            return (self is other)
+        if tree_member is None: return False
+        if isinstance(tree_member, Block):
+            return (self is tree_member)
         else:
-            assert isinstance(other, Node)
-            return (self in other)
+            assert isinstance(tree_member, Node)
+            return (self in tree_member)
+    
+    
+    def make_containing_path(self):
+        '''
+        Create a path that contains this block.
+        
+        There may be multiple different paths that contain this block. This will
+        return the one which points to the newest possible forks.
+        
+        Returns the path.
+        '''
+        return self[0].make_containing_path()
+        
+    
+    
+    def all_possible_paths(self):
+        '''
+        Get a list of all possible paths that contain this block.
+        
+        Note: There may be paths that contain this node which will not be
+        identical to one of the paths given here, because these other paths may
+        specify decisions that are not even on the same root as these paths.
+        '''
+        return self[0].all_possible_paths()
+    
+    
+    
+    def make_past_path(self):
+        '''
+        Create a path that contains this block.
+        
+        There may be multiple different paths that contain this node. This will
+        return a path that doesn't specify any decisions after this node.
+        '''
+        return self[0].make_past_path()
+
+
+    
+    def get_all_leaves(self, max_nodes_distance=None, max_clock_distance=None):
+        '''
+        Get all leaves that are descendents of this block.
+        
+        Only leaves with a distance of at most `max_nodes_distance` in nodes or
+        `max_clock_distance` in clock are returned. (Note this is an OR relation
+        between the two condintions)
+        
+        Returns a dict of the form:
+        
+        {
+            leaf1: {
+                'nodes_distance': nodes_distance1,
+                'clock_distance': clock_distance1,
+            },            
+            leaf2: {
+                'nodes_distance': nodes_distance2,
+                'clock_distance': clock_distance2,
+            },
+            # ...
+        }
+            
+        '''
+        return self[-1].make_containing_path(max_nodes_distance,
+                                             max_clock_distance)
+
+    
+    
+    def get_ancestor(self, generations=1, round=False):
+        '''
+        Get an ancestor of this block.
+        
+        `generations` specifies the number of generation that the returned
+        ancestor should be above the current block. `round` determines how this
+        method will behave if it was asked for too many generations back, and
+        not enough existed. If `round` is True, it will return the root. If
+        `round` is False, it will raise a LookupError.
+        '''
+        return self[0].get_ancestor(generations, round)
+
+    
+    
+    def get_root(self):
+        '''
+        Get the root of this block.
+        
+        This means the node which is the parent of the parent of the parent
+        of... the parent of this block.
+        '''
+        return self[0].get_root()
+
     
     def __repr__(self):
         '''
         Get a string representation of the block.
         
         Example output:
-        <garlicsim.data_structures.block.Block of length 40 crunched with
+        <garlicsim.data_structures.Block of length 40 crunched with
         StepProfile(t=0.1) at 0x1c84d70>
         '''
         assert self.alive # todo: say "Dead block"
-        return '<%s.%s of length %s, crunched with %s at %s>' % \
+        return '<%s of length %s, crunched with %s at %s>' % \
                (
-                   self.__class__.__module__,
-                   self.__class__.__name__,
+                   misc_tools.shorten_class_address(
+                       self.__class__.__module__,
+                       self.__class__.__name__
+                   ),
                    len(self),
                    self.get_step_profile(),
                    hex(id(self))

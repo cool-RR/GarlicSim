@@ -1,0 +1,17 @@
+.. _topics-step-functions:
+
+=========================
+Writing the step function
+=========================
+
+The basic step function
+=======================
+
+The inplace step function
+=========================
+
+The step generator
+==================
+
+The inplace step generator
+==========================

@@ -12,6 +12,8 @@ import garlicsim.general_misc.queue_tools as queue_tools
 import garlicsim.general_misc.third_party.decorator
 import garlicsim.general_misc.change_tracker
 from garlicsim.general_misc.infinity import Infinity
+from garlicsim.general_misc import misc_tools
+from garlicsim.general_misc import cute_iter_tools
 
 import garlicsim
 import garlicsim.data_structures
@@ -19,18 +21,18 @@ import garlicsim.misc
 import crunchers
 from crunching_profile import CrunchingProfile
 from garlicsim.misc.step_profile import StepProfile
+from .misc import EndMarker
+
 
 __all__ = ['CrunchingManager', 'DefaultCruncher', 'DefaultHistoryCruncher']
 
+
 DefaultCruncher = crunchers.CruncherThread
-'''
-The cruncher class to be used by default in non-history-dependent simulations.
-'''
+'''Cruncher class to be used by default in non-history-dependent simulations.'''
+
 
 DefaultHistoryCruncher = crunchers.CruncherThread
-'''
-The cruncher class to be used by default in history-dependent simulations.
-'''
+'''Cruncher class to be used by default in history-dependent simulations.'''
 
 
 @garlicsim.general_misc.third_party.decorator.decorator
@@ -122,7 +124,7 @@ class CrunchingManager(object):
         for (job, cruncher) in self.crunchers.copy().items():
             if not (job in self.jobs):
                 (added_nodes, new_leaf) = \
-                    self.__add_work_to_tree(cruncher, job.node, retire=True)
+                    self.__add_work_to_tree(cruncher, job, retire=True)
                 total_added_nodes += added_nodes
                 del self.crunchers[job]
 
@@ -133,7 +135,7 @@ class CrunchingManager(object):
             if job not in self.crunchers:
                 if not job.is_done():
                     self.__conditional_create_cruncher(job)
-                else: # job_done is True
+                else: # job.is_done() is True
                     self.jobs.remove(job)
                 continue
 
@@ -142,7 +144,7 @@ class CrunchingManager(object):
             cruncher = self.crunchers[job]
             
             (added_nodes, new_leaf) = self.__add_work_to_tree(cruncher,
-                                                              job.node)
+                                                              job)
             total_added_nodes += added_nodes
 
             job.node = new_leaf
@@ -161,7 +163,7 @@ class CrunchingManager(object):
                 else:
                     
                     self.__conditional_create_cruncher(job)
-            else: # job.is_done() is True           
+            else: # job.is_done() is True
                 self.jobs.remove(job)
                 if cruncher.is_alive():
                     cruncher.retire()
@@ -202,25 +204,29 @@ class CrunchingManager(object):
         This is every job whose .node attribute is equal to the specified node.
         '''
         return [job for job in self.jobs if job.node == node]
+
     
-    def __add_work_to_tree(self, cruncher, node, retire=False):
+    def __add_work_to_tree(self, cruncher, job, retire=False):
         '''
-        Take work from the cruncher and add to the tree at the specified node.
+        Take work from cruncher and add to tree at the specified job's node.
         
-        If `retire` is set to True, retires the cruncher.
+        If `retire` is set to True, retires the cruncher. Keep in mind that if
+        the cruncher gives an EndMarker, it will be retired regardless of the
+        `retire` argument.
         
         Returns (number, leaf), where `number` is the number of nodes that were
         added, and `leaf` is the last node that was added.
         '''
-        #todo: modify this to take job?
         
         tree = self.project.tree
+        node = job.node
         
         current = node
         counter = 0
         self.step_profiles[cruncher]
         
         for thing in queue_tools.iterate(cruncher.work_queue):
+            
             if isinstance(thing, garlicsim.data_structures.State):
                 counter += 1
                 current = tree.add_state(
@@ -231,13 +237,19 @@ class CrunchingManager(object):
                 )
                 # todo optimization: save step profile in variable, it's
                 # wasteful to do a dict lookup every state.
+            
+            elif isinstance(thing, EndMarker):
+                tree.make_end(node=current,
+                              step_profile=self.step_profiles[cruncher])
+                job.resulted_in_end = True
+                
                 
             elif isinstance(thing, StepProfile):
                 self.step_profiles[cruncher] = thing
             else:
-                raise Exception('Unexpected object in work queue')
+                raise Exception('Unexpected object %s in work queue' % thing)
                         
-        if retire:
+        if retire or job.resulted_in_end:
             cruncher.retire()
         
         nodes_added = garlicsim.misc.NodesAdded(counter)
@@ -249,17 +261,19 @@ class CrunchingManager(object):
         Get a string representation of the crunching manager.
         
         Example output:
-        <garlicsim.asynchronous_crunching.crunching_manager.CrunchingManager
+        <garlicsim.asynchronous_crunching.CrunchingManager
         currently employing 2 crunchers to handle 2 jobs at 0x1f699b0>
         '''
         
         crunchers_count = len(self.crunchers)
         job_count = len(self.jobs)
                                    
-        return '<%s.%s currently employing %s crunchers to handle %s jobs at %s>' % \
+        return '<%s currently employing %s crunchers to handle %s jobs at %s>' % \
                (
-                   self.__class__.__module__,
-                   self.__class__.__name__,
+                   misc_tools.shorten_class_address(
+                       self.__class__.__module__,
+                       self.__class__.__name__
+                   ),
                    crunchers_count,
                    job_count,
                    hex(id(self))

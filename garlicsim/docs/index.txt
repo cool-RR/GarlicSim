@@ -1,0 +1,23 @@
+.. _index:
+
+=======================
+garlicsim documentation
+=======================
+
+Contents:
+
+.. toctree::
+   :maxdepth: 2
+   
+   intro/index
+   topics/index
+   ref/index
+   misc/index
+
+More documentation coming soon! If you have any questions or feedback, say hello
+on the `mailing list`_!
+
+.. _mailing list: mailto:garlicsim@librelist.org
+
+.. * :ref:`genindex`
+.. * :ref:`modindex`

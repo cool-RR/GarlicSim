@@ -9,6 +9,9 @@ See its documentation for more info.
 
 import wx
 
+from garlicsim_wx.general_misc import cute_timer
+
+
 class FlagRaiser(object): # todo: rename?
     '''When called, raises a flag of a window and then calls some function.'''
     def __init__(self, window, attribute_name=None, function=None, delay=None):
@@ -43,10 +46,10 @@ class FlagRaiser(object): # todo: rename?
             self._delay_in_ms = delay * 1000
             '''The delay in milliseconds.'''
             
-            self.timer = wx.Timer()
+            self.timer = cute_timer.CuteTimer(self.window)
             '''The timer we use to call the function.'''
             
-            self.timer.Bind(wx.EVT_TIMER, self.on_timer, self.timer)
+            self.window.Bind(wx.EVT_TIMER, self.on_timer, self.timer)
 
             
     def __call__(self):
