@@ -4,6 +4,8 @@
 import wx
 import wx.lib.scrolledpanel as scrolled
 
+import garlicsim_wx
+
 '''
 tododoc
 '''
@@ -56,21 +58,21 @@ class Visualization(HasTraits):
                 )
                 
     
-class StateViewer(wx.lib.scrolledpanel.ScrolledPanel):
+class StateViewer(wx.lib.scrolledpanel.ScrolledPanel,
+                  garlicsim_wx.widgets.WorkspaceWidget):
     '''
     
     '''
-    def __init__(self, parent, id, gui_project, *args, **kwargs):
-        wx.lib.scrolledpanel.ScrolledPanel.__init__(self, parent, id,
-                                                    style=wx.SUNKEN_BORDER,
-                                                    *args,
-                                                    **kwargs)
+    def __init__(self, frame, *args, **kwargs):
+        wx.lib.scrolledpanel.ScrolledPanel.__init__(self, frame,
+                                                    *args, **kwargs)
+        garlicsim_wx.widgets.WorkspaceWidget.__init__(self, frame)
+        
         self.SetupScrolling()
         #self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_SIZE, self.on_size)
         #self.Bind(wx.EVT_MOUSE_EVENTS, self.on_mouse_event)
 
-        self.gui_project = gui_project
         
         self.visualization = Visualization()
         self.control = \
@@ -80,6 +82,11 @@ class StateViewer(wx.lib.scrolledpanel.ScrolledPanel):
         
         self.font = wx.Font(12, wx.FONTFAMILY_TELETYPE, wx.FONTSTYLE_NORMAL,
                             wx.FONTWEIGHT_BOLD, face='Courier New')
+        
+        
+        self.gui_project.active_node_changed_emitter.add_output(
+            lambda: self.load_state(self.gui_project.get_active_state())
+        )
 
         
     def load_state(self, state):
