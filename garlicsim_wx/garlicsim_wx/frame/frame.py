@@ -278,7 +278,16 @@ class Frame(wx.Frame):
             wx_tools.Key(wx.WXK_PAGEDOWN): on_page_down,
             wx_tools.Key(wx.WXK_SPACE): on_space,
             wx_tools.Key(wx.WXK_RETURN): on_return,
-        }    
+        }
+        
+        #self.accelerator_table = wx.AcceleratorTable(
+            #[
+                #(wx.acce,  ord('X'), exitID),
+                              #(wx.ACCEL_CTRL, ord('H'), helpID),
+                              #(wx.ACCEL_CTRL, ord('F'), findID),
+                              #(wx.ACCEL_NORMAL, wx.WXK_F3, findnextID)
+            #]
+        #)
             
         
     def on_close(self, event):
