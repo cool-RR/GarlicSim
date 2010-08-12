@@ -280,15 +280,21 @@ class Frame(wx.Frame):
             wx_tools.Key(wx.WXK_RETURN): on_return,
         }
         
-        #self.accelerator_table = wx.AcceleratorTable(
-            #[
-                #(wx.acce,  ord('X'), exitID),
-                              #(wx.ACCEL_CTRL, ord('H'), helpID),
-                              #(wx.ACCEL_CTRL, ord('F'), findID),
-                              #(wx.ACCEL_NORMAL, wx.WXK_F3, findnextID)
-            #]
-        #)
-            
+        crapass = wx.NewId()
+        shit = wx.NewId()
+        
+        self.Bind(wx.EVT_MENU, lambda event: on_right(), id=crapass)
+        self.Bind(wx.EVT_MENU, lambda event: on_space(), id=shit)
+        
+        self.accelerator_table = wx.AcceleratorTable(
+            [
+                (wx.ACCEL_NORMAL, wx.WXK_RIGHT, crapass),
+                (wx.ACCEL_NORMAL, wx.WXK_SPACE, shit),
+            ]
+        )
+
+        self.SetAcceleratorTable(self.accelerator_table)
+        
         
     def on_close(self, event):
         '''Close the frame.'''
