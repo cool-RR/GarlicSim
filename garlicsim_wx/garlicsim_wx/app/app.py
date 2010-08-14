@@ -40,7 +40,10 @@ class App(wx.PySimpleApp):
         assert not (new_gui_project_simpack_name and load_gui_project_file_path)
         self.new_gui_project_simpack_name = new_gui_project_simpack_name
         self.load_gui_project_file_path = load_gui_project_file_path
+        
         super(App, self).__init__()
+        
+        self.SetCallFilterEvent()
         
     
     def OnInit(self):
@@ -78,3 +81,6 @@ class App(wx.PySimpleApp):
             )
             
         return True
+    
+    def FilterEvent(self, event):
+        return wx.App.FilterEvent(self, event)
