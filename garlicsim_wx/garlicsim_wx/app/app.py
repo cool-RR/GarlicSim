@@ -23,6 +23,7 @@ class App(wx.PySimpleApp):
     # todo: need to think if i allow frames with no app. on one hand good idea,
     # to allow people to start a garlicsim_wx frame in their own app. on other
     # hand frames will need to know how to start another frame.
+    # tododoc: cache `super` in critical paths.
     def __init__(self, new_gui_project_simpack_name=None,
                  load_gui_project_file_path=None):
         '''
@@ -43,7 +44,10 @@ class App(wx.PySimpleApp):
         
         super(App, self).__init__()
         
-        self.SetCallFilterEvent()
+        #self.SetCallFilterEvent()
+        
+        self.Bind(wx.EVT_KEY_DOWN, self.on_key_down)
+               
         
     
     def OnInit(self):
@@ -82,5 +86,15 @@ class App(wx.PySimpleApp):
             
         return True
     
+    def ProcessEvent(self, event):
+        return super(App, self).ProcessEvent(event)
+    
     def FilterEvent(self, event):
-        return wx.App.FilterEvent(self, event)
+        if not isinstance(event, wx.KeyEvent):
+            return super(App, self).FilterEvent(event)
+        else: # isinstance(event, wx.KeyEvent)
+            return super(App, self).FilterEvent(event)
+            
+    def on_key_down(self, event):
+        # Hello mama!
+        event.Skip()
