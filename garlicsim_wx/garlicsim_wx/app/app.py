@@ -50,7 +50,7 @@ class App(wx.PySimpleApp):
         
         #self.SetCallFilterEvent()
         
-        self._keys_waiting_for_char = {}
+        self._keys_waiting_for_char_or_token = []
         self.Bind(wx.EVT_KEY_DOWN, self.on_key_down)
         self.Bind(wx.EVT_CHAR, self.on_char)
         self.Bind(wx_tools.EVT_TOKEN, self.on_token)
@@ -111,34 +111,28 @@ class App(wx.PySimpleApp):
     def on_key_down(self, event):
         key = wx_tools.Key.get_from_key_event(event)
         if key.would_cause_evt_char():
-            token_event = wx.PyEvent(self.GetId())
-            event.SetEventType(event_binder.evtType[0])
+            event.Skip()
+            token_event = wx.PyEvent(0)
+            event.SetEventType(wx_tools.EVT_TOKEN.evtType[0])
             event.key = key
             wx.PostEvent(self, event)
+            self._keys_waiting_for_char_or_token.append(key)
         else:
             self.process_key(key)
-        event.Skip()
             
         
     def on_char(self, event):
         key = wx_tools.Key.get_from_key_event(event)
-        if key.would_cause_evt_char():
-            self._keys_waiting_for_char[key] = False
-            token_event = wx.PyEvent(self.GetId())
-            event.SetEventType(event_binder.evtType[0])
-            event.key = key
-            wx.PostEvent(self, event)
-        else:
+        if key in self._keys_waiting_for_char_or_token:
+            self._keys_waiting_for_char_or_token.remove(key)
             self.process_key(key)
-        event.Skip()
+        else:
+            event.Skip()
         
         
     def on_token(self, event):
         key = wx_tools.Key.get_from_key_event(event)
-        if key.would_cause_evt_char():
-            1/0
-        else:
-            1/0
-        event.Skip()
-        
-    
+        try:
+            self._keys_waiting_for_char_or_token.remove(key)
+        except ValueError:
+            pass

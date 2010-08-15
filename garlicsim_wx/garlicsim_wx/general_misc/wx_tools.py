@@ -54,6 +54,7 @@ def post_event(evt_handler, event_binder, source=None):
 
 wxEVT_TOKEN = wx.NewEventType()
 EVT_TOKEN = wx.PyEventBinder(wxEVT_TOKEN, 1)
+# tododoc, should be moved to key_binding_manager package
 
     
 class Key(object):    
@@ -96,6 +97,24 @@ class Key(object):
             return True
         else:
             return False
+        
+    def char_to_normal(self): # tododoc: terrible
+        return Key(
+            ord(chr(self.key_code).upper()),
+            self.cmd,
+            self.alt,
+            self.shift
+        )
+    
+    def normal_to_char(self):
+         # tododoc: terrible, i need access to system function
+        return Key(
+            ord(chr(self.key_code).upper()) if self.shift else \
+            ord(chr(self.key_code).upper()),
+            self.cmd,
+            self.alt,
+            self.shift
+        )
         
     
 def iter_rects_of_region(region):
