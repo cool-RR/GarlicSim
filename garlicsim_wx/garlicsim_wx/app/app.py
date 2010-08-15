@@ -11,6 +11,8 @@ import functools
 
 import wx
 
+from garlicsim_wx.general_misc import wx_tools
+
 import garlicsim_wx
 
 
@@ -86,15 +88,19 @@ class App(wx.PySimpleApp):
             
         return True
     
-    def ProcessEvent(self, event):
-        return super(App, self).ProcessEvent(event)
+    #def ProcessEvent(self, event):
+        #return super(App, self).ProcessEvent(event)
     
-    def FilterEvent(self, event):
-        if not isinstance(event, wx.KeyEvent):
-            return super(App, self).FilterEvent(event)
-        else: # isinstance(event, wx.KeyEvent)
-            return super(App, self).FilterEvent(event)
+    #def FilterEvent(self, event):
+        #if not isinstance(event, wx.KeyEvent):
+            #return super(App, self).FilterEvent(event)
+        #else: # isinstance(event, wx.KeyEvent)
+            #return super(App, self).FilterEvent(event)
             
     def on_key_down(self, event):
-        # Hello mama!
+        key = wx_tools.Key.get_from_key_event(event)
+        if key.would_cause_evt_char():
+            1/0
+        else:
+            1/0
         event.Skip()

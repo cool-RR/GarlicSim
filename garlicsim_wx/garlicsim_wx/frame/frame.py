@@ -283,17 +283,17 @@ class Frame(wx.Frame):
         crapass = wx.NewId()
         shit = wx.NewId()
         
-        self.Bind(wx.EVT_MENU, lambda event: on_right(), id=crapass)
-        self.Bind(wx.EVT_MENU, lambda event: on_space(), id=shit)
+        #self.Bind(wx.EVT_MENU, lambda event: on_right(), id=crapass)
+        #self.Bind(wx.EVT_MENU, lambda event: on_space(), id=shit)
         
-        self.accelerator_table = wx.AcceleratorTable(
-            [
-                (wx.ACCEL_NORMAL, wx.WXK_RIGHT, crapass),
-                (wx.ACCEL_NORMAL, wx.WXK_SPACE, shit),
-            ]
-        )
+        #self.accelerator_table = wx.AcceleratorTable(
+            #[
+                #(wx.ACCEL_NORMAL, wx.WXK_RIGHT, crapass),
+                #(wx.ACCEL_NORMAL, wx.WXK_SPACE, shit),
+            #]
+        #)
 
-        self.SetAcceleratorTable(self.accelerator_table)
+        #self.SetAcceleratorTable(self.accelerator_table)
         
         
     def on_close(self, event):

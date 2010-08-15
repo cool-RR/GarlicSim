@@ -86,6 +86,12 @@ class Key(object):
                self.cmd == other.cmd and \
                self.shift == other.shift and \
                self.alt == other.alt
+    
+    def would_cause_evt_char(self):
+        if (not self.cmd) and (not self.alt):
+            return True
+        else:
+            return False
         
     
 def iter_rects_of_region(region):
