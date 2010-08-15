@@ -26,6 +26,8 @@ class App(wx.PySimpleApp):
     # to allow people to start a garlicsim_wx frame in their own app. on other
     # hand frames will need to know how to start another frame.
     # tododoc: cache `super` in critical paths.
+    # tododoc: move all stuff related to shortcut keys to
+    # KeyBindingManager
     def __init__(self, new_gui_project_simpack_name=None,
                  load_gui_project_file_path=None):
         '''
@@ -48,9 +50,12 @@ class App(wx.PySimpleApp):
         
         #self.SetCallFilterEvent()
         
+        self._keys_waiting_for_char = {}
         self.Bind(wx.EVT_KEY_DOWN, self.on_key_down)
-               
+        self.Bind(wx.EVT_CHAR, self.on_char)
+        self.Bind(wx_tools.EVT_TOKEN, self.on_token)
         
+               
     
     def OnInit(self):
         
@@ -96,11 +101,44 @@ class App(wx.PySimpleApp):
             #return super(App, self).FilterEvent(event)
         #else: # isinstance(event, wx.KeyEvent)
             #return super(App, self).FilterEvent(event)
+    
+    def process_key(self, key):
+        assert isinstance(key, wx_tools.Key)
+        if key == wx_tools.Key(ord('`')):
+            1/1/1/1/1/1/1/1/1/0 # woo woo woo @
+        
             
     def on_key_down(self, event):
+        key = wx_tools.Key.get_from_key_event(event)
+        if key.would_cause_evt_char():
+            token_event = wx.PyEvent(self.GetId())
+            event.SetEventType(event_binder.evtType[0])
+            event.key = key
+            wx.PostEvent(self, event)
+        else:
+            self.process_key(key)
+        event.Skip()
+            
+        
+    def on_char(self, event):
+        key = wx_tools.Key.get_from_key_event(event)
+        if key.would_cause_evt_char():
+            self._keys_waiting_for_char[key] = False
+            token_event = wx.PyEvent(self.GetId())
+            event.SetEventType(event_binder.evtType[0])
+            event.key = key
+            wx.PostEvent(self, event)
+        else:
+            self.process_key(key)
+        event.Skip()
+        
+        
+    def on_token(self, event):
         key = wx_tools.Key.get_from_key_event(event)
         if key.would_cause_evt_char():
             1/0
         else:
             1/0
         event.Skip()
+        
+    

@@ -51,6 +51,10 @@ def post_event(evt_handler, event_binder, source=None):
     event.SetEventType(event_binder.evtType[0])
     wx.PostEvent(evt_handler, event)
     
+
+wxEVT_TOKEN = wx.NewEventType()
+EVT_TOKEN = wx.PyEventBinder(wxEVT_TOKEN, 1)
+
     
 class Key(object):    
     '''A key combination.'''
