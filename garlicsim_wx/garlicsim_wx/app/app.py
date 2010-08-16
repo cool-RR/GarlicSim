@@ -104,35 +104,49 @@ class App(wx.PySimpleApp):
     
     def process_key(self, key):
         assert isinstance(key, wx_tools.Key)
-        if key == wx_tools.Key(ord('`')):
+        if key == wx_tools.Key(ord('~')):
             1/1/1/1/1/1/1/1/1/0 # woo woo woo @
+            return True
+        
+        return False
+        
         
             
     def on_key_down(self, event):
         key = wx_tools.Key.get_from_key_event(event)
-        if key.would_cause_evt_char():
+        
+        if key.would_cause_evt_char() and \
+           event.GetEventObject() and \
+           event.GetEventObject().GetWindowStyle() & wx.WANTS_CHARS:
+            
+            char_key = key.normal_to_char()
             event.Skip()
             token_event = wx.PyEvent(0)
             event.SetEventType(wx_tools.EVT_TOKEN.evtType[0])
             event.key = key
             wx.PostEvent(self, event)
-            self._keys_waiting_for_char_or_token.append(key)
+            self._keys_waiting_for_char_or_token.append((key, char_key))
         else:
-            self.process_key(key)
+            if not self.process_key(key):
+                event.Skip()
             
         
     def on_char(self, event):
-        key = wx_tools.Key.get_from_key_event(event)
-        if key in self._keys_waiting_for_char_or_token:
-            self._keys_waiting_for_char_or_token.remove(key)
-            self.process_key(key)
+        my_char_key = wx_tools.Key.get_from_key_event(event)
+        for key, char_key in self._keys_waiting_for_char_or_token:
+            if char_key == my_char_key:
+                self._keys_waiting_for_char_or_token.remove((key, char_key))
+                if not self.process_key(key):
+                    event.Skip()
+                break
         else:
             event.Skip()
         
         
     def on_token(self, event):
-        key = wx_tools.Key.get_from_key_event(event)
-        try:
-            self._keys_waiting_for_char_or_token.remove(key)
-        except ValueError:
-            pass
+        my_key = wx_tools.Key.get_from_key_event(event)
+        for key, char_key in self._keys_waiting_for_char_or_token:
+            if my_key == key:
+                self._keys_waiting_for_char_or_token.remove((key, char_key))
+                break
+            

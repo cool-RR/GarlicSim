@@ -92,11 +92,9 @@ class Key(object):
                self.shift == other.shift and \
                self.alt == other.alt
     
-    def would_cause_evt_char(self):
-        if (not self.cmd) and (not self.alt):
-            return True
-        else:
-            return False
+    def would_cause_evt_char(self): #tododoc: terrible
+        return (not self.cmd) and (not self.alt) and \
+               (0 <= self.key_code <= 255)
         
     def char_to_normal(self): # tododoc: terrible
         return Key(
@@ -107,10 +105,10 @@ class Key(object):
         )
     
     def normal_to_char(self):
-         # tododoc: terrible, i need access to system function
+        # tododoc: terrible, i need access to system function
         return Key(
             ord(chr(self.key_code).upper()) if self.shift else \
-            ord(chr(self.key_code).upper()),
+            ord(chr(self.key_code).lower()),
             self.cmd,
             self.alt,
             self.shift
