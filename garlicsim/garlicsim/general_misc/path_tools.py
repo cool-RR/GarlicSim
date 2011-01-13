@@ -46,6 +46,7 @@ def get_root_path_of_module(module):
     else:
         # It's a one-file module, not a package.
         result = dir_path
+    sys.stderr.write(str((result, sys.path)))
     assert result in sys.path
     return result
 
