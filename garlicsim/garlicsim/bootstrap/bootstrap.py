@@ -45,7 +45,11 @@ def __check_prerequisites():
         else:
             return [pkg_resources]
     
-    def check_distribute():  
+    def check_distribute():
+        assert sys.frozen
+        # Making this a no-op since you can't use `pkg_resources.require` in a
+        # py2exe-frozen app:
+        return []
         import pkg_resources
         try:
             pkg_resources.require('distribute')
