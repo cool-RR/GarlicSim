@@ -46,7 +46,7 @@ def get_root_path_of_module(module):
     else:
         # It's a one-file module, not a package.
         result = dir_path
-    if not result in sys.path:
-        raise Exception(str((result, sys.path)))
+    # because py2exe ends paths with '\.':
+    assert result in map(os.path.abspath, sys.path) 
     return result
 
