@@ -18,9 +18,9 @@ def divisorGen(n):
             if i >= nfactors:
                 return
 
-import operator            
-
-import garlicsim
+import operator
+import itertools
+from collections import Counter
 
 def product(seq):
     return reduce(operator.mul, seq, 1)
@@ -38,19 +38,22 @@ def get_prime_divisors(x):
     assert product(prime_divisors) == original_x
     return prime_divisors
 
+def get_clean_counter(counter):
+    clean_counter = Counter(counter)    
+    empty_keys = [key for key in counter.keys() if counter[key] == 0]
+    for empty_key in empty_keys:
+        del clean_counter[empty_key]
+    return clean_counter
 
-def get_prime_divisors_dict(x):
-    prime_divisors = get_prime_divisors(x)
-    return dict((prime_divisor, prime_divisors.count(prime_divisor)) for
-                prime_divisor in set(prime_divisors))
-
-
-def get_contained_prime_divisor_dicts(prime_divisor_dict):
-    contained_prime_divisor_dicts = []
-    prime_divisor_dicts_to_handle = [prime_divisor_dict]
-    while prime_divisor_dicts_to_handle:
-        my_prime_divisor_dict = prime_divisor_dicts_to_handle.pop()
-        contained_prime_divisor_dicts.append(my_prime_divisor_dict)
+def get_contained_counters(counter):
+    clean_counter = get_clean_counter(counter)
+    keys, values = zip(*clean_counter.items())
+    value_combinations = itertools.product((xrange(value) for value in values))
+    contained_counters = []
+    for value_combination in value_combinations:
+        contained_counters.append(Counter(zip(keys, value_combination)))
+    return contained_counters
+    
         
     
 
