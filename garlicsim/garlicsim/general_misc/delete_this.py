@@ -1,6 +1,6 @@
 # blocktodo: delete this
 
-from garlicsim.general_misc import cute_profile
+
 
 def divisorGen(n):
     factors = list(factorGenerator(n))
@@ -18,6 +18,50 @@ def divisorGen(n):
             if i >= nfactors:
                 return
 
+import operator            
+
+import garlicsim
+
+def product(seq):
+    return reduce(operator.mul, seq, 1)
+
+
+def get_prime_divisors(x):
+    original_x = x
+    prime_divisors = []
+    i = 1
+    while x > 1:
+        i += 1
+        while x % i == 0:
+            prime_divisors.append(i)
+            x //= i
+    assert product(prime_divisors) == original_x
+    return prime_divisors
+
+
+def get_prime_divisors_dict(x):
+    prime_divisors = get_prime_divisors(x)
+    return dict((prime_divisor, prime_divisors.count(prime_divisor)) for
+                prime_divisor in set(prime_divisors))
+
+
+def get_contained_prime_divisor_dicts(prime_divisor_dict):
+    contained_prime_divisor_dicts = []
+    prime_divisor_dicts_to_handle = [prime_divisor_dict]
+    while prime_divisor_dicts_to_handle:
+        my_prime_divisor_dict = prime_divisor_dicts_to_handle.pop()
+        
+    
+
+def alt_get_divisors(x):
+    
+    
+            
+                
+
+from garlicsim.general_misc import cute_profile
+        
+        
 def get_divisors(x):
     return [i for i in xrange(1, x) if (x % i == 0)]
 
@@ -30,5 +74,5 @@ def get_perfects(top):
 
 if __name__ == '__main__':
     get_perfects.profiling_on = True
-    get_perfects(1000)
-    1/0
+    #get_perfects(1000)
+    0
