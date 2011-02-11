@@ -30,19 +30,17 @@ prime_list = [2]
 
 def iter_primes(top=float('inf')):
     for prime in prime_list:
-        if prime >= top:
+        if prime > top:
             raise StopIteration
         yield prime
-    if prime + 1 == top:
-        raise StopIteration
     for new_prime in iter_new_primes():
-        if new_prime >= top:
+        if new_prime > top:
             raise StopIteration
         yield new_prime
     
 def iter_new_primes():
     for number in itertools.count(prime_list[-1] + 1):
-        smaller_primes = iter_primes(top=number)
+        smaller_primes = iter_primes(top=number//2)
         found_divisor = False
         for smaller_prime in smaller_primes:
             if number % smaller_prime == 0:
