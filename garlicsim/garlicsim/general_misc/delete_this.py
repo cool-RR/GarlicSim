@@ -21,22 +21,50 @@
 import operator
 import itertools
 from collections import Counter
+from garlicsim.general_misc import caching
 
 def product(seq):
     return reduce(operator.mul, seq, 1)
 
+prime_list = [2]
 
+def iter_primes():
+    for prime in prime_list:
+        yield prime
+    for new_prime in iter_new_primes():
+        yield new_prime
+    
+def iter_new_primes():
+    for number in itertools.count(prime_list[-1] + 1):
+        smaller_primes = itertools.takewhile(
+            lambda smaller_prime: smaller_prime < number,
+            iter_primes()
+        )
+        found_divisor = False
+        for smaller_prime in smaller_primes:
+            if number % smaller_prime == 0:
+                found_divisor = True
+                break
+        if not found_divisor:
+            prime_list.append(number)
+            yield number
+            
+def is_prime(x):
+    new_primes_iterator = iter_new_primes()
+    while prime_list[-1] < x: 
+        new_primes_iterator.next()
+    return x in prime_list
+    
+caching.cache()
 def get_prime_divisors(x):
-    original_x = x
+    if x == 1:
+        return []
     prime_divisors = []
     i = 1
-    while x > 1:
-        i += 1
-        while x % i == 0:
-            prime_divisors.append(i)
-            x //= i
-    assert product(prime_divisors) == original_x
-    return prime_divisors
+    for prime in iter_primes():
+        if x % prime == 0:
+            prime_divisors = [prime] + get_prime_divisors(x // i)
+            return prime_divisors
 
 def get_clean_counter(counter):
     clean_counter = Counter(counter)    
@@ -87,5 +115,5 @@ def get_perfects(top):
 if __name__ == '__main__':
     #get_divisors = alt_get_divisors
     get_perfects.profiling_on = True
-    get_perfects(1000)
+    get_perfects(10000)
     0
