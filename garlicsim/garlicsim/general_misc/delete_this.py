@@ -50,22 +50,25 @@ def get_contained_counters(counter):
     clean_counter = get_clean_counter(counter)
     keys, values = zip(*clean_counter.items())
     value_combinations = itertools.product(
-        (xrange(value + 1) for value in values)
+        *(xrange(value + 1) for value in values)
     )
     contained_counters = []
     for value_combination in value_combinations:
-        contained_counters.append(Counter(zip(keys, value_combination)))
+        contained_counters.append(Counter(dict(zip(keys, value_combination))))
     return contained_counters
 
 
 def get_divisors(x):
+    if x == 1:
+        return [1]
     prime_divisors_counter = Counter(get_prime_divisors(x))
     contained_prime_divisors_counters = \
         get_contained_counters(prime_divisors_counter)
     divisors = []
     for contained_prime_divisors_counter in contained_prime_divisors_counters:
         divisors.append(product(contained_prime_divisors_counter.elements()))
-    return divisors
+    divisors.remove(x)
+    return sorted(divisors)
     
 
 from garlicsim.general_misc import cute_profile
@@ -82,6 +85,7 @@ def get_perfects(top):
     return [i for i in xrange(1, top) if is_perfect(i)]
 
 if __name__ == '__main__':
+    #get_divisors = alt_get_divisors
     get_perfects.profiling_on = True
-    #get_perfects(1000)
+    get_perfects(1000)
     0
