@@ -50,6 +50,7 @@ def get_contained_prime_divisor_dicts(prime_divisor_dict):
     prime_divisor_dicts_to_handle = [prime_divisor_dict]
     while prime_divisor_dicts_to_handle:
         my_prime_divisor_dict = prime_divisor_dicts_to_handle.pop()
+        contained_prime_divisor_dicts.append(my_prime_divisor_dict)
         
     
 
