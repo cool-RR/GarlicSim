@@ -59,3 +59,5 @@ cruncher_types_list.append(PiCloudCruncher)
 #                                                                             #
 ### Finished adding `PiCloudCruncher` dummy. ##################################
 
+cruncher_types_list.reverse() # blocktododoc: this is for PiCloudCruncher\
+                              # testing, remove this eventually
