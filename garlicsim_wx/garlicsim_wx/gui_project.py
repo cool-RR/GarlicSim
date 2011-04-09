@@ -76,16 +76,16 @@ class GuiProject(object):
         
         assert isinstance(self.project, garlicsim.Project)
         
-
-        ### If it's a new project, use `ProcessCruncher` if available: ########
+        # blocktododoc: remove PiCloudCruncher as default: cruncher
+        ### If it's a new project, use `PiCloudCruncher` if available: ########
         #                                                                     #
         
         if (not project): # Note this is the project given as an argument
-            if (crunchers.ProcessCruncher in 
+            if (crunchers.PiCloudCruncher in 
                 simpack_grokker.available_cruncher_types):
                 
                 self.project.crunching_manager.cruncher_type = \
-                    crunchers.ProcessCruncher
+                    crunchers.PiCloudCruncher
         #                                                                     #
         #######################################################################
             
