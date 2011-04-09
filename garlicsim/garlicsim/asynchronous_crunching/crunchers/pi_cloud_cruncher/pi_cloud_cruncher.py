@@ -11,6 +11,7 @@ import time
 
 from garlicsim.general_misc import import_tools
 from garlicsim.general_misc import string_tools
+from garlicsim.general_misc import cute_profile
 
 import garlicsim
 from garlicsim.asynchronous_crunching import \
@@ -21,7 +22,7 @@ __all__ = ['PiCloudCruncher']
 
 
 
-
+#@cute_profile.profile_ready(condition=lambda *args, **kwargs: True, off_after=False)
 def step_and_go(state, step_iterator_getter, step_profile, clock_target,
                 time_to_run):
     import cloud
@@ -35,7 +36,7 @@ def step_and_go(state, step_iterator_getter, step_profile, clock_target,
     while (state.clock < clock_target) and (time.time() < time_to_stop):
         new_states.append(step_iterator.next())
     
-    if state.clock < clock_target:
+    if new_states[-1].clock < clock_target:
         new_jid = cloud.call(step_and_go, state, step_iterator_getter,
                              step_profile, clock_target,
                              time_to_run - my_time_to_run, _high_cpu=True)
