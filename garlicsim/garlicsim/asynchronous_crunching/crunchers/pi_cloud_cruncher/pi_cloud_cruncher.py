@@ -20,7 +20,7 @@ from garlicsim.asynchronous_crunching import \
 
 __all__ = ['PiCloudCruncher']    
 
-
+# blocktodo: remove `_profile=True` everywhere.
 
 #@cute_profile.profile_ready(condition=lambda *args, **kwargs: True, off_after=False)
 def step_and_go(state, step_iterator_getter, step_profile, clock_target,
@@ -39,7 +39,7 @@ def step_and_go(state, step_iterator_getter, step_profile, clock_target,
     if new_states[-1].clock < clock_target:
         new_jid = cloud.call(step_and_go, state, step_iterator_getter,
                              step_profile, clock_target,
-                             time_to_run - my_time_to_run, _high_cpu=True)
+                             time_to_run - my_time_to_run, _high_cpu=True, _profile=True)
     else:
         new_jid = None
         
@@ -150,7 +150,8 @@ class PiCloudCruncher(BaseCruncher, threading.Thread):
                                          self.step_profile,
                                          clock_target,
                                          time_to_run,
-                                         _high_cpu=True)
+                                         _high_cpu=True,
+                                         _profile=True)
                 jid = initial_jid
                 while True:
                     (states, jid) = cloud.result(jid)
