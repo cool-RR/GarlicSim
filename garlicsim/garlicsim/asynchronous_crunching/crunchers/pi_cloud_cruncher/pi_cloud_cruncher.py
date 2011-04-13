@@ -29,17 +29,24 @@ def step_and_go(state, step_iterator_getter, step_profile, clock_target,
     if state.clock >= clock_target or time_to_run < 0.01:
         return ([], None)
     
-    my_time_to_run = min(0.5, time_to_run)
+    my_time_to_run = min(4, time_to_run)
     time_to_stop = time.time() + my_time_to_run
     step_iterator = step_iterator_getter(state, step_profile)
+    current_state = state
     new_states = []
-    while (state.clock < clock_target) and (time.time() < time_to_stop):
-        new_states.append(step_iterator.next())
-    
-    if new_states[-1].clock < clock_target:
+    while (current_state.clock < clock_target) and \
+          (time.time() < time_to_stop):
+        current_state = step_iterator.next()
+        new_states.append(current_state)
+
+    print('Produced states with clocks: %s.' % \
+          [state.clock for state in new_states])
+        
+    if current_state.clock < clock_target:
         new_jid = cloud.call(step_and_go, state, step_iterator_getter,
                              step_profile, clock_target,
-                             time_to_run - my_time_to_run, _high_cpu=True, _profile=True)
+                             time_to_run - my_time_to_run, _high_cpu=True,
+                             _profile=True)
     else:
         new_jid = None
         
@@ -143,7 +150,7 @@ class PiCloudCruncher(BaseCruncher, threading.Thread):
             while True:
                 clock_target = self.crunching_profile.clock_target
                 current_clock = state.clock
-                time_to_run = 3
+                time_to_run = 30
                 initial_jid = cloud.call(step_and_go,
                                          state,
                                          self.step_iterator_getter,
