@@ -29,7 +29,7 @@ def step_and_go(state, step_iterator_getter, step_profile, clock_target,
     if state.clock >= clock_target or time_to_run < 0.01:
         return ([], None)
     
-    my_time_to_run = min(0.5, time_to_run)
+    my_time_to_run = min(1.2, time_to_run)
     time_to_stop = time.time() + my_time_to_run
     step_iterator = step_iterator_getter(state, step_profile)
     current_state = state
