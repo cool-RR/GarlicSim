@@ -48,7 +48,8 @@ class SimpackSelectionDialog(CuteDialog):
         self.frame = frame
         
         with wx_tools.WindowFreezer(self):
-            self.__init_build()
+            with self.accelerator_table_freezer:
+                self.__init_build()
             
         
     def __init_build(self):
