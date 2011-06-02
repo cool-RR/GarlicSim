@@ -115,11 +115,11 @@ class HueControl(CuteWindow):
         '''Open a dialog to edit the hue.'''
         old_hue = self.getter()
         
-        hue_selection_dialog = HueSelectionDialog.create_and_show_modal(
+        HueSelectionDialog(
             self.TopLevelParent, self.getter, self.setter, self.emitter,
             lightness=self.lightness, saturation=self.saturation,
             title=self.dialog_title
-        )
+        ).ShowModal()
 
             
     def update(self):
