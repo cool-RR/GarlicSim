@@ -49,7 +49,7 @@ class Textual(CutePanel):
         )
         
         self.hue_selection_dialog = hue_selection_dialog
-        self.hue = hue_selection_dialog.hue
+        #self.hue = hue_selection_dialog.hue
         
         self.main_v_sizer = wx.BoxSizer(wx.VERTICAL)
         
@@ -63,10 +63,10 @@ class Textual(CutePanel):
         self.main_v_sizer.Add(self.h_sizer, 0)
         
         self.spin_ctrl = wx.SpinCtrl(self, min=0, max=359,
-                                     initial=ratio_to_round_degrees(self.hue),
+                                     initial=77,
                                      size=(70, -1), style=wx.SP_WRAP)
-        if wx_tools.is_mac:
-            self.spin_ctrl.SetValue(ratio_to_round_degrees(self.hue))
+        #if wx_tools.is_mac:
+            #self.spin_ctrl.SetValue(ratio_to_round_degrees(self.hue))
         
         self.h_sizer.Add(self.spin_ctrl, 0)
         
