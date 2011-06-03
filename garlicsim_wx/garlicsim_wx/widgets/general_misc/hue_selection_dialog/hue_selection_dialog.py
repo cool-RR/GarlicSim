@@ -24,9 +24,9 @@ class Textual(wx.Panel):
         
         
 
-class Comparer(wx.Panel):
+class Comparer(wx.PyControl):
     def __init__(self, hue_selection_dialog):
-        wx.Panel.__init__(self, parent=hue_selection_dialog, size=(75, 90))
+        wx.PyControl.__init__(self, parent=hue_selection_dialog, size=(75, 90))
                             
         
 class HueSelectionDialog(wx.Dialog):
