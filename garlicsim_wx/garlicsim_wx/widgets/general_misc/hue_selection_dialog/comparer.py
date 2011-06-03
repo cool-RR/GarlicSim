@@ -10,16 +10,15 @@ See its documentation for more details.
 import wx
 
 from garlicsim_wx.general_misc import wx_tools
-from garlicsim_wx.widgets.general_misc.cute_panel import CutePanel
+from garlicsim_wx.widgets.general_misc.cute_control import CuteControl
 
-
-class Comparer(CutePanel):
+class Comparer(wx.PyControl):
     '''Shows the new hue compared to the old hue before dialog was started.'''
     def __init__(self, hue_selection_dialog):
         style = wx.TAB_TRAVERSAL | (wx.SIMPLE_BORDER if wx_tools.is_gtk
                                     else wx.SUNKEN_BORDER)
-        wx.Panel.__init__(self, parent=hue_selection_dialog, size=(75, 90),
-                          style=style)
+        wx.PyControl.__init__(self, parent=hue_selection_dialog, size=(75, 90),
+                             style=style)
         self.SetDoubleBuffered(True)
         self.SetHelpText('The current hue is shown next to the old hue for '
                          'comparison. To change back to the old hue, click on '
@@ -85,7 +84,7 @@ class Comparer(CutePanel):
         dc.SetBrush(self.old_brush)
         dc.DrawRectangle(0, (height // 2), width, (height // 2) + 1)
         
-        if self.has_focus():
+        if wx.Window.FindFocus() == self: # blocktodo: use has_focus
             graphics_context.SetPen(
                 wx_tools.drawing_tools.pens.get_focus_pen(
                     self.negative_old_color
