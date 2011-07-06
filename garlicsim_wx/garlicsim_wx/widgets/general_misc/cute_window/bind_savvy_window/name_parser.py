@@ -12,6 +12,7 @@ from garlicsim.general_misc.third_party import abc
 from garlicsim.general_misc import abc_tools
 from garlicsim.general_misc import sequence_tools
 from garlicsim.general_misc import string_tools
+from garlicsim.general_misc.misc_tools import name_mangling
 
 
 class CaseStyleType(abc.ABCMeta):
@@ -120,7 +121,7 @@ class NameParser(object):
                    self.n_preceding_underscores_possibilites)
         
                 
-    def parse(self, name):
+    def parse(self, name, class_name):
         '''
         Parse a name into a tuple of "words".
         
@@ -130,15 +131,19 @@ class NameParser(object):
         
         Returns `None` if there is no match.
         '''
-        n_preceding_underscores = string_tools.get_n_identical_edge_characters(
+        demangled_name = name_mangling.demangle_attribute_name_if_needed(
             name,
+            class_name
+        )
+        n_preceding_underscores = string_tools.get_n_identical_edge_characters(
+            demangled_name,
             character='_',
             head=True
         )
         if n_preceding_underscores not in \
            self.n_preceding_underscores_possibilites:
             return None
-        cleaned_name = name[n_preceding_underscores:]
+        cleaned_name = demangled_name[n_preceding_underscores:]
         # blocktodo: What about the 'on' part?
         for case_style in self.case_style_possibilites:
             result = case_style.parse(cleaned_name)
@@ -148,7 +153,7 @@ class NameParser(object):
             return None
     
         
-    def match(self, name):
+    def match(self, name, class_name):
         '''Does `name` match our parser? (i.e. can it be parsed into words?)'''
         return (self.parse(name) is not None)
     
