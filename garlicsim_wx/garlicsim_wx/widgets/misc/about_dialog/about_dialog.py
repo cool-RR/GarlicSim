@@ -17,6 +17,8 @@ from garlicsim_wx.general_misc import wx_tools
 import garlicsim_wx.general_misc.cute_timer
 from garlicsim_wx.widgets.general_misc.cute_dialog import CuteDialog
 from garlicsim_wx.widgets.general_misc.cute_html_window import CuteHtmlWindow
+from garlicsim_wx.widgets.general_misc.cute_window.bind_savvy_window import \
+                                              name_parser as name_parser_module
 
 import garlicsim_wx
 from .bitmap_viewer import BitmapViewer
@@ -32,6 +34,12 @@ class AboutDialog(CuteDialog):
     The dialog explains what GarlicSim does and shows the license and version
     number.
     '''
+
+    _BindSavvyWindowType__name_parser = name_parser_module.NameParser(
+        (name_parser_module.LowerCase, name_parser_module.CamelCase),
+        n_preceding_underscores_possibilities=(0, 2,)
+    )
+    
     def __init__(self, frame):
    
         CuteDialog.__init__(self, frame, title='About GarlicSim')
@@ -115,11 +123,11 @@ class AboutDialog(CuteDialog):
 
         
         self.button_sizer = button_sizer = wx.StdDialogButtonSizer()
-        self.ok_button = wx.Button(self, wx.ID_OK,
+        self.OkButton = wx.Button(self, wx.ID_OK,
                                    "&Let's get back to simulating!")
-        self.ok_button.SetDefault()
-        button_sizer.SetAffirmativeButton(self.ok_button)
-        button_sizer.AddButton(self.ok_button)
+        self.OkButton.SetDefault()
+        button_sizer.SetAffirmativeButton(self.OkButton)
+        button_sizer.AddButton(self.OkButton)
         button_sizer.Realize()
         button_sizer.SetMinSize((500, -1))
         v_sizer.Add(button_sizer, 0, wx.BOTTOM, border=10)
@@ -127,19 +135,19 @@ class AboutDialog(CuteDialog):
         self.SetSizerAndFit(v_sizer)
         self.Layout()
         
-        self.timer = garlicsim_wx.general_misc.cute_timer.CuteTimer(self)
-        self.timer.Start(40, oneShot=True)
+        self.Timer = garlicsim_wx.general_misc.cute_timer.CuteTimer(self)
+        self.Timer.Start(40, oneShot=True)
         
         self._rotate_image_hue()
         
         self.bind_event_handers(AboutDialog)
 
         
-    def _on_ok_button(self, event):
+    def OnOkButton(self, event):
         self.EndModal(wx.ID_OK)
 
         
-    def _on_timer(self, event):
+    def OnTimer(self, event):
         self._rotate_image_hue()
 
         
@@ -149,16 +157,16 @@ class AboutDialog(CuteDialog):
         t = time.time()
         new_image.RotateHue((t / 50.) % 1)
         self.bitmap_viewer.set_bitmap(wx.BitmapFromImage(new_image))
-        self.timer.Start(40, oneShot=True)
+        self.Timer.Start(40, oneShot=True)
 
         
     def ShowModal(self):
-        wx.CallAfter(self.ok_button.SetFocus)
+        wx.CallAfter(self.OkButton.SetFocus)
         CuteDialog.ShowModal(self)
         
         
     def EndModal(self, *args, **kwargs):
-        self.timer.Stop()
+        self.Timer.Stop()
         wx.Dialog.EndModal(self, *args, **kwargs)
 
         
