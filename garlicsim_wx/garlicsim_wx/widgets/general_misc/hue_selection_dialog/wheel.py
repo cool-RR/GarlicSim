@@ -98,7 +98,7 @@ class Wheel(CutePanel):
     
     _BindSavvyWindowType__name_parser = name_parser_module.NameParser(
         name_parser_module.CamelCase,
-        n_preceding_underscores_possibilites=(1, 3)
+        n_preceding_underscores_possibilites=2
     )
     
 
@@ -171,7 +171,7 @@ class Wheel(CutePanel):
             lambda self: self.hue_selection_dialog.EndModal(wx.ID_OK)
     }
             
-    def OnKeyDown(self, event):
+    def __OnKeyDown(self, event):
         key = wx_tools.keyboard.Key.get_from_key_event(event)
         try:
             handler = self.__key_map[key]
@@ -182,17 +182,17 @@ class Wheel(CutePanel):
             return handler(self)
             
             
-    def OnSetFocus(self, event):
+    def __OnSetFocus(self, event):
         event.Skip()
         self.Refresh()
         
 
-    def OnKillFocus(self, event):
+    def __OnKillFocus(self, event):
         event.Skip()
         self.Refresh()
         
         
-    def OnPaint(self, event):
+    def __OnPaint(self, event):
 
         ### Preparing: ########################################################
         dc = wx.BufferedPaintDC(self)
@@ -223,7 +223,7 @@ class Wheel(CutePanel):
         
                 
         
-    def OnMouseEvents(self, event):
+    def __OnMouseEvents(self, event):
         
         center_x = center_y = BIG_LENGTH // 2 
         x, y = event.GetPosition()
