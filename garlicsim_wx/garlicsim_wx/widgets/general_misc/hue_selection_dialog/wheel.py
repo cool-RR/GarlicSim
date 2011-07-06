@@ -20,6 +20,8 @@ from garlicsim.general_misc import cute_iter_tools
 from garlicsim_wx.general_misc import wx_tools
 from garlicsim_wx.widgets.general_misc.cute_panel import CutePanel
 from garlicsim_wx.general_misc import color_tools
+from garlicsim_wx.widgets.general_misc.cute_window.bind_savvy_window import \
+                                              name_parser as name_parser_module
 
 BIG_LENGTH = 221
 THICKNESS = 21
@@ -93,6 +95,13 @@ class Wheel(CutePanel):
     '''
     Color wheel that displays current hue and allows moving to different hue.
     '''
+    
+    _BindSavvyWindowType__name_parser = name_parser_module.NameParser(
+        name_parser_module.CamelCase,
+        n_preceding_underscores_possibilites=(1, 3)
+    )
+    
+
     def __init__(self, hue_selection_dialog):
         style = (wx.NO_BORDER | wx.WANTS_CHARS)
         wx.Panel.__init__(self, parent=hue_selection_dialog,
@@ -162,7 +171,7 @@ class Wheel(CutePanel):
             lambda self: self.hue_selection_dialog.EndModal(wx.ID_OK)
     }
             
-    def _on_key_down(self, event):
+    def OnKeyDown(self, event):
         key = wx_tools.keyboard.Key.get_from_key_event(event)
         try:
             handler = self.__key_map[key]
@@ -173,17 +182,17 @@ class Wheel(CutePanel):
             return handler(self)
             
             
-    def _on_set_focus(self, event):
+    def OnSetFocus(self, event):
         event.Skip()
         self.Refresh()
         
 
-    def _on_kill_focus(self, event):
+    def OnKillFocus(self, event):
         event.Skip()
         self.Refresh()
         
         
-    def _on_paint(self, event):
+    def OnPaint(self, event):
 
         ### Preparing: ########################################################
         dc = wx.BufferedPaintDC(self)
@@ -214,7 +223,7 @@ class Wheel(CutePanel):
         
                 
         
-    def _on_mouse_events(self, event):
+    def OnMouseEvents(self, event):
         
         center_x = center_y = BIG_LENGTH // 2 
         x, y = event.GetPosition()
