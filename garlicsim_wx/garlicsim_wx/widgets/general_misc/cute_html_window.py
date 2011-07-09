@@ -10,20 +10,22 @@ See its documentation for more information.
 import webbrowser
 
 import wx.html
+import wx.webkit
 
 from garlicsim_wx.widgets.general_misc.cute_window import CuteWindow
 
 
-class CuteHtmlWindow(wx.html.HtmlWindow, CuteWindow):
+class CuteHtmlWindow(wx.webkit.WebKitCtrl, CuteWindow):
 
     event_modules = wx.html
     
     def __init__(self, parent, id=-1, pos=wx.DefaultPosition, 
-                 size=wx.DefaultSize, style=wx.html.HW_DEFAULT_STYLE,
-                 name=wx.html.HtmlWindowNameStr):
-        wx.html.HtmlWindow.__init__(self, parent=parent, id=id, pos=pos,
-                                    size=size, style=style, name=name)
+                 size=wx.DefaultSize, style=0,
+                 name=wx.webkit.WebKitNameStr):
+        wx.webkit.WebKitCtrl.__init__(self, parent=parent)#, winID=id, pos=pos,
+                                    #size=size, style=style, name=name)
         self.bind_event_handlers(CuteHtmlWindow)
+        self.SetPage = self.SetPageSource
         
         
     def _on_html_link_clicked(self, event):
