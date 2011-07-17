@@ -9,7 +9,7 @@ See its documentation for more info.
 
 class ObsoleteCruncherException(BaseException):
     '''
-    The cruncher that got this exception raised became obsolte.
+    The cruncher that got this exception raised became obsolete.
     
     The cruncher is trying to do work, but in the meantime the main program
     decided that the work assigned to this cruncher is no longer wanted, and

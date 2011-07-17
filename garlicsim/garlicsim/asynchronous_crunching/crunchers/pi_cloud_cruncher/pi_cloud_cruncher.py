@@ -12,6 +12,7 @@ import time
 from garlicsim.general_misc import import_tools
 from garlicsim.general_misc import string_tools
 from garlicsim.general_misc import cute_profile
+from garlicsim.general_misc.reasoned_bool import ReasonedBool
 
 import garlicsim
 from garlicsim.asynchronous_crunching import \
