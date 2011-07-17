@@ -10,19 +10,24 @@ See its documentation for more details.
 import wx
 
 from garlicsim_wx.general_misc import wx_tools
+from garlicsim_wx.widgets.general_misc.cute_panel import CutePanel
 
 from .close_button import CloseButton
 from .value_text_ctrl import ValueTextCtrl
 
 
-class StarArg(wx.Panel):
+class StarArg(CutePanel):
     '''
     Widget for specifying an extraneous positional argument (for `*args`).
     '''
     def __init__(self, argument_control, star_arg_box, value=''):
         wx.Panel.__init__(self, argument_control)
-        if wx.Platform == '__WXGTK__':
-            self.SetBackgroundColour(wx_tools.get_background_color())
+        if wx_tools.is_gtk:
+            self.set_good_background_color()
+            
+        self.HelpText = ('Allows you to set the values of additional '
+                         'arguments that the step function accepts. These '
+                         'are unnamed arguments.')
         
         self.argument_control = argument_control
         
@@ -45,8 +50,7 @@ class StarArg(wx.Panel):
         
         self.SetSizer(self.main_h_sizer)
         
-        self.Bind(wx.EVT_BUTTON, lambda event: self.remove(),
-                  source=self.close_button)
+        self.bind_event_handlers(StarArg)
     
         
     def remove(self):
@@ -57,7 +61,10 @@ class StarArg(wx.Panel):
     def get_value_string(self):
         '''Get the value of the arument as a string.'''
         return self.value_text_ctrl.GetValue()
-        
-        
+    
+    
+    def _on_close_button(self, event):
+        self.remove()
+    
         
             

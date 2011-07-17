@@ -2,10 +2,13 @@
 # This program is distributed under the LGPL2.1 license.
 
 '''
-Defines the `` class.
+Defines the `AutocrunchControls` class.
 
 See its documentation for more details.
 '''
+
+# todo: when deleting, don't disable, it's annoying because then you need to
+# click the checkbox to type again. Just wait for focus out.
 
 from __future__ import with_statement
 
@@ -13,34 +16,36 @@ import wx
 
 import garlicsim, garlicsim_wx
 
-from garlicsim.general_misc.context_manager import ContextManager
+from garlicsim.general_misc import freezers
+from garlicsim.general_misc.context_managers import ContextManager
 from garlicsim_wx.general_misc import wx_tools
+from garlicsim_wx.widgets.general_misc.cute_panel import CutePanel
 
 
-class Freezer(ContextManager):
-    '''
-    Freezer for not changing the `SpinCtrl`'s text value.
+#class AutocrunchFreezer(ContextManager):
+    #'''
+    #Freezer for not changing the `SpinCtrl`'s text value.
 
-    Used as a context manager. Anything that happens inside the `with` suite
-    will not cause the `SpinCtrl` to update its text value.
+    #Used as a context manager. Anything that happens inside the `with` suite
+    #will not cause the `SpinCtrl` to update its text value.
     
-    This is useful because when the `SpinCtrl`'s value changes, some platforms
-    automatically select all the text in the `SpinCtrl`, which is really
-    annoying if you're just typing in it.
-    '''
+    #This is useful because when the `SpinCtrl`'s value changes, some platforms
+    #automatically select all the text in the `SpinCtrl`, which is really
+    #annoying if you're just typing in it.
+    #'''
     
-    def __init__(self, autocrunch_controls):
-        self.autocrunch_controls = autocrunch_controls
+    #def __init__(self, autocrunch_controls):
+        #self.autocrunch_controls = autocrunch_controls
         
-    def __enter__(self):
-        self.autocrunch_controls.frozen += 1
+    #def __enter__(self):
+        #self.autocrunch_controls.frozen += 1
         
-    def __exit__(self, *args, **kwargs):
-        self.autocrunch_controls.frozen -= 1
+    #def __exit__(self, *args, **kwargs):
+        #self.autocrunch_controls.frozen -= 1
         
 
-class AutocrunchControls(wx.Panel):
-
+class AutocrunchControls(CutePanel):
+    '''blocktododoc'''
     def __init__(self, parent, frame):
 
         assert isinstance(frame, garlicsim_wx.Frame)
@@ -50,15 +55,12 @@ class AutocrunchControls(wx.Panel):
         
         wx.Panel.__init__(self, parent, -1)
         
-        self.SetBackgroundColour(wx_tools.get_background_color())
+        self.set_good_background_color()
         
         tooltip_text = ('Set the clock buffer that will be crunched '
                         'automatically from the active node.')
         
         self.SetToolTipString(tooltip_text)
-                
-        self.frozen = 0
-        self.freezer = Freezer(self)
         
         self.main_h_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
@@ -104,12 +106,8 @@ class AutocrunchControls(wx.Panel):
             self.update_check_box
         )
         
-        self.Bind(wx.EVT_CHECKBOX, self.on_check_box,
-                  source=self.check_box)
-        
-        self.Bind(wx.EVT_SPINCTRL, self.on_spin, self.spin_ctrl)
-        self.Bind(wx.EVT_TEXT, self.on_text, self.spin_ctrl)
-        
+        self.bind_event_handlers(AutocrunchControls)
+    
         self.gui_project.default_buffer_modified_emitter.add_output(
             self.update_spin_ctrl
         )
@@ -117,8 +115,10 @@ class AutocrunchControls(wx.Panel):
         #                                                                     #
         ### Finished setting up event handling and emitter connections. #######
         
+    value_freezer = freezers.FreezerProperty()
         
-    def on_check_box(self, event):
+        
+    def _on_check_box__checkbox(self, event):
         if event.IsChecked(): # Checkbox got checked
             new_autocrunch = \
                 self.gui_project._default_buffer_before_cancellation or 100
@@ -143,20 +143,20 @@ class AutocrunchControls(wx.Panel):
         self.gui_project.set_default_buffer(self.spin_ctrl.GetValue())
         
             
-    def on_spin(self, event):
+    def _on_spin_ctrl__spinctrl(self, event):
         self._update_gui_project()
         event.Skip()
             
         
-    def on_text(self, event):
-        with self.freezer:
+    def _on_spin_ctrl__text(self, event):
+        with self.value_freezer:
             self._update_gui_project()
         event.Skip()
         
         
     def update_spin_ctrl(self):
         '''Update the `SpinCtrl` with the gui project's autocrunch value.'''
-        if not self.frozen:
+        if not self.value_freezer.frozen:
             value = self.gui_project.default_buffer or \
                     self.gui_project._default_buffer_before_cancellation or \
                     0
@@ -171,17 +171,6 @@ class AutocrunchControls(wx.Panel):
         self.check_box.SetValue(
             bool(self.gui_project.default_buffer)
         )
-        
-        
-    def on_size(self, event):
-        '''EVT_SIZE handler.'''
-        self.Refresh()
-        event.Skip()
-    
-        
-    def on_paint(self, event):
-        '''EVT_PAINT handler.'''
-        event.Skip()
         
 
     

@@ -39,7 +39,7 @@ class AuiDockArt(aui.AuiDefaultDockArt):
         
         self.SetMetric(aui.AUI_DOCKART_SASH_SIZE, 2)
         
-        font_size = 9 if wx.Platform == '__WXMAC__' else 7
+        font_size = 9 if wx_tools.is_mac else 7
         
         self.SetMetric(aui.AUI_DOCKART_CAPTION_SIZE, 11)
         self.SetFont(
@@ -51,7 +51,7 @@ class AuiDockArt(aui.AuiDefaultDockArt):
         #               aui.AUI_GRADIENT_NONE)
         
         self.SetColor(aui.AUI_DOCKART_INACTIVE_CAPTION_COLOUR,
-                      wx_tools.get_background_color())
+                      wx_tools.colors.get_background_color())
 
         
     def DrawCaption(self, dc, window, text, rect, pane):

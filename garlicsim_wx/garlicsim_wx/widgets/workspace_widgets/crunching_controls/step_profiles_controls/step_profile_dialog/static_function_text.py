@@ -9,35 +9,37 @@ See its documentation for more details.
 
 import wx
 
+from garlicsim_wx.widgets.general_misc.cute_panel import CutePanel
 from garlicsim_wx.general_misc import wx_tools
 
 import garlicsim
 
 
-class StaticFunctionText(wx.Panel):
+class StaticFunctionText(CutePanel):
     '''Static text showing information about the current step function.'''
     
     def __init__(self, step_profile_dialog, step_function=None):
         
         self.step_profile_dialog = step_profile_dialog
         
-        self.width = 400 if wx.Platform == '__WXMSW__' else 500
+        self.width = 400 if wx_tools.is_win else 500
         
         self.step_function = None
         
         wx.Panel.__init__(self, step_profile_dialog)
-        
-        self.SetBackgroundColour(wx_tools.get_background_color())
+        self.HelpText = ('Information about the currently-selected step '
+                         'function.')
+        self.set_good_background_color()
         
         self.text = wx.StaticText(self, style=wx.ALIGN_CENTER_HORIZONTAL)
         
         self.SetMinSize((self.width, 25))
         
-        #self.SetBackgroundColour(wx_tools.get_background_color())
+        #self.set_good_background_color()
         
         self.text.Wrap(self.width - 10)
         
-        self.Bind(wx.EVT_SIZE, self.on_size)
+        self.bind_event_handlers(StaticFunctionText)
         
         self.main_h_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
@@ -84,5 +86,6 @@ class StaticFunctionText(wx.Panel):
             self.Layout()
 
     
-    def on_size(self, event):
+    def _on_size(self, event):
         pass
+    

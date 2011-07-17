@@ -7,8 +7,9 @@ from __future__ import with_statement
 
 import tempfile
 import shutil
+import os
 
-from garlicsim.general_misc.context_manager import ContextManager
+from garlicsim.general_misc.context_managers import ContextManager
 
 
 
@@ -46,10 +47,11 @@ class TemporaryFolder(ContextManager):
     def __enter__(self):
         assert not self._closed
         self.path = tempfile.mkdtemp(suffix=self.suffix, prefix=self.prefix)
+        assert os.path.isdir(self.path)
         return self.path
 
     
-    def __exit__(self, type_, value, traceback):
+    def __exit__(self, exc_type, exc_value, exc_traceback):
         assert not self._closed
         shutil.rmtree(self.path)
         self._closed = True

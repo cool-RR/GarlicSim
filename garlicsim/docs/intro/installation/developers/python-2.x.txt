@@ -1,7 +1,8 @@
 ..
    Copyright 2009-2011 Ram Rachum. This work is licensed under a Creative
-   Commons Attribution-Share Alike 2.5 Israel License, which may be obtained at
-   http://creativecommons.org/licenses/by-sa/2.5/il/
+   Commons Attribution-ShareAlike 3.0 Unported License, with attribution to
+   "Ram Rachum at cool-rr.com" including link. The license may be obtained
+   at http://creativecommons.org/licenses/by-sa/3.0/
 
 .. _intro-installation-developers-python-2.x:
 
@@ -36,6 +37,8 @@ For :mod:`garlicsim`
  
 * `distribute`_.
 
+* on Windows only: `Python for Windows Extensions`_.
+
 And for users of Python 2.5 only:
 
 * `Backport of the multiprocessing module`_.
@@ -43,13 +46,14 @@ And for users of Python 2.5 only:
 Optional but recommended:
 
 * `Psyco`_.
-* on Windows only: `Python for Windows Extensions`_.
  
 
 For :mod:`garlicsim_wx`
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 * `wxPython 2.8.10.1 or above (but below 2.9)`_
+
+* `Docutils 0.7 or above`_
 
 
 
@@ -115,3 +119,4 @@ like this::
 .. _Python for Windows Extensions: http://sourceforge.net/projects/pywin32
 .. _Psyco: http://psyco.sourceforge.net
 .. _wxPython 2.8.10.1 or above (but below 2.9): http://wxpython.org/download.php
+.. _Docutils 0.7 or above: http://pypi.python.org/pypi/docutils/

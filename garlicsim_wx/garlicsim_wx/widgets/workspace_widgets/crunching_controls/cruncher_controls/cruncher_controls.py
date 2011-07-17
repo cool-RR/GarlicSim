@@ -5,13 +5,15 @@ import pkg_resources
 import wx
 
 from garlicsim_wx.general_misc import wx_tools
+from garlicsim_wx.widgets.general_misc.cute_panel import CutePanel
 
-import garlicsim, garlicsim_wx
+import garlicsim
+import garlicsim_wx
 
 from .cruncher_selection_dialog import CruncherSelectionDialog
 
     
-class CruncherControls(wx.Panel):
+class CruncherControls(CutePanel):
     '''Widget for viewing/changing the active cruncher type.'''
     
     def __init__(self, parent, frame):
@@ -22,7 +24,7 @@ class CruncherControls(wx.Panel):
         
         wx.Panel.__init__(self, parent)
         
-        self.SetBackgroundColour(wx_tools.get_background_color())
+        self.set_good_background_color()
         
         self.SetToolTipString('Observe or change the cruncher type that is '
                               'used when crunching the simulation.')
@@ -45,8 +47,8 @@ class CruncherControls(wx.Panel):
         
         
         self.change_cruncher_button = wx.Button(self, -1, 'Change...')
-        self.Bind(wx.EVT_BUTTON, self.on_change_cruncher_button,
-                  self.change_cruncher_button)
+        
+        self.bind_event_handlers(CruncherControls)
         
         self.main_v_sizer.Add(self.change_cruncher_button, 0,
                               wx.ALIGN_RIGHT | wx.BOTTOM, 5)
@@ -56,10 +58,8 @@ class CruncherControls(wx.Panel):
         )
         
         
-    def on_change_cruncher_button(self, event):
-        cruncher_selection_dialog = CruncherSelectionDialog(self)
-        cruncher_selection_dialog.ShowModal()
-        cruncher_selection_dialog.Destroy()
+    def _on_change_cruncher_button(self, event):
+        CruncherSelectionDialog.create_and_show_modal(self)
         
     
     def _recalculate(self):

@@ -28,7 +28,7 @@ class StarArgBox(wx.StaticBox):
         self.argument_control = argument_control
         
         wx.StaticBox.__init__(self, argument_control,
-                              label='Additional arguments')
+                              label='&Positional arguments')
         
         self.SetMinSize(argument_control.box_size)
         self.SetMaxSize(argument_control.box_size)
@@ -57,13 +57,13 @@ class StarArgBox(wx.StaticBox):
         self.star_adder = StarAdder(argument_control)
         self.sizer.Add(self.star_adder, 0, wx.EXPAND | wx.ALL, border=5)
         
-        self.Parent.Bind(EVT_STAR_ADDER_PRESSED, self.on_star_adder_pressed,
+        self.Parent.Bind(EVT_STAR_ADDER_PRESSED, self._on_star_adder_pressed,
                          source=self.star_adder)
         
         
-    def on_star_adder_pressed(self, event):
+    def _on_star_adder_pressed(self, event):
         
-        with wx_tools.WindowFreezer(self.Parent.Parent):
+        with wx_tools.window_tools.WindowFreezer(self.Parent.Parent):
             star_arg = StarArg(self.argument_control, self)
             star_arg.MoveBeforeInTabOrder(self.star_adder)
             star_arg.SetFocus()
@@ -75,7 +75,7 @@ class StarArgBox(wx.StaticBox):
         
     def layout(self):
 
-        with wx_tools.WindowFreezer(self.Parent.Parent):
+        with wx_tools.window_tools.WindowFreezer(self.Parent.Parent):
         
             self.Parent.main_h_sizer.Fit(self.Parent)
             self.Parent.Layout()
@@ -96,7 +96,7 @@ class StarArgBox(wx.StaticBox):
         else:
             place_to_put_focus_in = self.star_adder
             
-        with wx_tools.WindowFreezer(self.Parent.Parent):
+        with wx_tools.window_tools.WindowFreezer(self.Parent.Parent):
             self.star_args.remove(star_arg)
             self.sizer.Remove(star_arg)
             star_arg.DestroyChildren()

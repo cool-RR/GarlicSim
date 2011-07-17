@@ -1,7 +1,8 @@
 ..
    Copyright 2009-2011 Ram Rachum. This work is licensed under a Creative
-   Commons Attribution-Share Alike 2.5 Israel License, which may be obtained at
-   http://creativecommons.org/licenses/by-sa/2.5/il/
+   Commons Attribution-ShareAlike 3.0 Unported License, with attribution to
+   "Ram Rachum at cool-rr.com" including link. The license may be obtained
+   at http://creativecommons.org/licenses/by-sa/3.0/
 
 .. _intro-tutorial3:
 
@@ -165,11 +166,11 @@ code::
             ### Creating brushes and pens: ########################################
             #                                                                     #
             background_brush = wx.Brush(self.GetBackgroundColour())
-            blue_brush = wx.Brush(wx.NamedColor('Blue'))
-            gold_brush = wx.Brush(wx.NamedColor('Gold'))
+            blue_brush = wx.Brush(wx.NamedColour('Blue'))
+            gold_brush = wx.Brush(wx.NamedColour('Gold'))
             
-            black_pen = wx.Pen(wx.NamedColor('Black'), width=1.5)
-            red_pen = wx.Pen(wx.NamedColor('Red'), width=1.5)
+            black_pen = wx.Pen(wx.NamedColour('Black'), width=1.5)
+            red_pen = wx.Pen(wx.NamedColour('Red'), width=1.5)
             #                                                                     #
             ### Finished creating brushes and pens. ###############################
             
@@ -273,8 +274,12 @@ What's next
 ===========
 
 This is the end of the tutorial series for now. To learn more about GarlicSim,
-read the :ref:`topical guides <topics-index>` or `say hello on the mailing
-list`_.
+read the :ref:`topical guides <topics-index>`. You should also go over all of 
+the skeleton files that were created when you executed the
+:command:`start_simpack.py` script: There's useful information there about
+how to customize different aspects of your simpack.
+
+If you need more help come `say hello on the mailing list`_.
 
 .. _Graphical User Interface: http://en.wikipedia.org/wiki/Graphical_user_interface
 .. _wxPython: http://wxpython.org

@@ -20,9 +20,14 @@ from garlicsim_wx.general_misc.third_party import aui
 import pkg_resources
 
 from garlicsim.general_misc.temp_value_setters import TempRecursionLimitSetter
+from garlicsim.general_misc import sys_tools
+from garlicsim_wx.widgets.general_misc.cute_file_dialog import CuteFileDialog
+from garlicsim_wx.widgets.general_misc.cute_frame import CuteFrame
+from garlicsim_wx.widgets.general_misc.cute_error_dialog import CuteErrorDialog
 from garlicsim_wx.general_misc import thread_timer
 from garlicsim_wx.general_misc import misc_tools
 from garlicsim_wx.general_misc import wx_tools
+import garlicsim_wx.widgets.general_misc.cute_frame
 
 import garlicsim
 from garlicsim_wx.gui_project import GuiProject
@@ -39,22 +44,19 @@ wildcard_text = ('GarlicSim Simulation Pickle (*.gssp)|*.gssp|'
                  'All files (*)|*')
 
 
-class Frame(wx.Frame):
+class Frame(CuteFrame):
     '''
     The main window of `garlicsim_wx`.
     
     This window allows the user to create and manipulate gui projects.
     '''
     def __init__(self, *args, **kwargs):
-        wx.Frame.__init__(self, *args, **kwargs)
+        CuteFrame.__init__(self, *args, **kwargs)
         
         self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM)
-        self.SetBackgroundColour(wx_tools.get_background_color())
-        
         self.SetDoubleBuffered(True)
-        self.SetIcons(garlicsim_wx.misc.icon_bundle.get_icon_bundle())
         
-        self.Bind(wx.EVT_CLOSE, self.on_close)
+        self.SetIcons(garlicsim_wx.misc.icon_bundle.get_icon_bundle())
         
         self.app = wx.GetApp()
         '''The GarlicSim `App` that created this frame.'''
@@ -84,19 +86,12 @@ class Frame(wx.Frame):
         self.__init_menus()
         self.__init_key_handlers()
         
-        self.Bind(wx.EVT_CONTEXT_MENU, self.on_context_menu, self)
-        
         self.background_timer = thread_timer.ThreadTimer(self)
-        
         self.background_timer.start(150)
         
-        self.Bind(
-            thread_timer.EVT_THREAD_TIMER,
-            lambda event: self.sync_crunchers(),
-            self.background_timer
-        )
-        
         self.aui_manager.Update()
+        
+        self.bind_event_handlers(Frame)
         
         self.Show()
         
@@ -137,8 +132,6 @@ class Frame(wx.Frame):
         
     def __init_key_handlers(self):
         '''Initialize key shortcuts.'''
-        
-        self.Bind(wx.EVT_KEY_DOWN, self.on_key_down)
         
         def on_home():
             '''Go to root node.'''
@@ -283,49 +276,34 @@ class Frame(wx.Frame):
                 
                 self.gui_project.finalize_active_node()
 
-        
-                
-        
         self.key_handlers = {
-            wx_tools.Key(wx.WXK_HOME): on_home,
-            wx_tools.Key(wx.WXK_END): on_end,
-            wx_tools.Key(wx.WXK_UP): on_up,
-            wx_tools.Key(wx.WXK_DOWN): on_down,
-            wx_tools.Key(wx.WXK_LEFT): on_left,
-            wx_tools.Key(wx.WXK_RIGHT): on_right,
-            wx_tools.Key(wx.WXK_LEFT, cmd=True): on_command_left,
-            wx_tools.Key(wx.WXK_RIGHT, cmd=True): on_command_right,
-            wx_tools.Key(wx.WXK_PAGEUP): on_page_up,
-            wx_tools.Key(wx.WXK_PAGEDOWN): on_page_down,
-            wx_tools.Key(wx.WXK_SPACE): on_space,
-            wx_tools.Key(wx.WXK_RETURN): on_return,
+            wx_tools.keyboard.Key(wx.WXK_HOME): on_home,
+            wx_tools.keyboard.Key(wx.WXK_END): on_end,
+            wx_tools.keyboard.Key(wx.WXK_UP): on_up,
+            wx_tools.keyboard.Key(wx.WXK_DOWN): on_down,
+            wx_tools.keyboard.Key(wx.WXK_LEFT): on_left,
+            wx_tools.keyboard.Key(wx.WXK_RIGHT): on_right,
+            wx_tools.keyboard.Key(wx.WXK_LEFT, cmd=True): on_command_left,
+            wx_tools.keyboard.Key(wx.WXK_RIGHT, cmd=True): on_command_right,
+            wx_tools.keyboard.Key(wx.WXK_PAGEUP): on_page_up,
+            wx_tools.keyboard.Key(wx.WXK_PAGEDOWN): on_page_down,
+            wx_tools.keyboard.Key(wx.WXK_SPACE): on_space,
+            wx_tools.keyboard.Key(wx.WXK_RETURN): on_return,
         }    
-            
-        
-    def on_close(self, event):
-        '''Close the frame.'''
-        if self.gui_project:
-            self.gui_project.stop_playing()
-        self.aui_manager.UnInit()
-        self.Destroy()
-        garlicsim_wx.general_misc.cute_base_timer.CuteBaseTimer.\
-            stop_timers_by_frame(self)
-        event.Skip()        
-        self.background_timer.stop()
 
         
-    def finalize_active_node(self, e=None):
+    def finalize_active_node(self):
         '''Finalize editing of the active node in the active gui project.'''
         assert self.gui_project
         return self.gui_project.finalize_active_node()
 
     
-    def on_new(self, event=None):
+    def create_new_gui_project(self):
         '''Create a new gui project.'''        
         
         if self.gui_project is not None:
             
-            if hasattr(sys, 'frozen'):
+            if sys_tools.frozen:
                 program_to_run = [sys.executable]
                 we_are_main_program = 'GarlicSim' in sys.executable
             else:
@@ -336,25 +314,15 @@ class Frame(wx.Frame):
                                     ('GarlicSim' in main_script)
             
             if not we_are_main_program:
-                warning_dialog = \
-                    garlicsim_wx.widgets.misc.NotMainProgramWarningDialog(self)
-                try:
-                    if warning_dialog.ShowModal() != wx.ID_YES:
-                        return
-                finally:
-                    warning_dialog.Destroy()
+                if garlicsim_wx.widgets.misc.NotMainProgramWarningDialog.\
+                   create_and_show_modal(self) != wx.ID_YES:
+                    return
+                    
+        simpack = garlicsim_wx.widgets.misc.SimpackSelectionDialog.\
+                  create_show_modal_and_return_simpack(self)
         
-        dialog = garlicsim_wx.widgets.misc.SimpackSelectionDialog(self)
-        
-        try:
-            if dialog.ShowModal() == wx.ID_OK:
-                simpack = dialog.get_simpack_selection()
-            else:
-                dialog.Destroy()
-                return
-        finally:
-            dialog.Destroy()
-
+        if not simpack:
+            return
         
         if self.gui_project is None:
             self._new_gui_project_from_simpack(simpack)
@@ -363,9 +331,9 @@ class Frame(wx.Frame):
             program_to_run.append('__garlicsim_wx_new=%s' % simpack.__name__)
             for simpack_place in garlicsim_wx.simpack_places:
                 program_to_run.append('__garlicsim_wx_simpack_place=%s' % \
-                                      ','.join(simpack_place))
+                                      ','.join(simpack_place[:2]))
          
-            with wx_tools.CursorChanger(self, wx.CURSOR_WAIT):
+            with self.create_cursor_changer(wx.CURSOR_WAIT):
                 subprocess.Popen(program_to_run)
             
             return
@@ -377,14 +345,9 @@ class Frame(wx.Frame):
         Internal use.
         '''
         assert self.gui_project is None
-        with wx_tools.CursorChanger(self, wx.CURSOR_WAIT):
+        with self.create_cursor_changer(wx.CURSOR_WAIT):
             gui_project = GuiProject(simpack, self)
             self.__setup_gui_project(gui_project)
-
-        
-    def on_exit_menu_button(self, event):
-        '''Exit menu button handler.'''
-        self._post_close_event()
 
         
     def _post_close_event(self):
@@ -432,7 +395,7 @@ class Frame(wx.Frame):
         # todo: should create StateReprViewer only if the simpack got no
         # workspace widgets
         
-        with wx_tools.WindowFreezer(self):
+        with self.freezer:
             
             self.tree_browser = workspace_widgets.TreeBrowser(self)
             self.aui_manager.AddPane(
@@ -574,12 +537,12 @@ class Frame(wx.Frame):
         self.gui_project.emitter_system.top_emitter.emit()
         
     
-    def on_open(self, event=None):
-        '''Raise a dialog for opening a gui project from file.'''
+    def open_gui_project(self):
+        '''Show a dialog for opening a gui project from file.'''
         
         if self.gui_project is not None:
             
-            if hasattr(sys, 'frozen'):
+            if sys_tools.frozen:
                 program_to_run = [sys.executable]
                 we_are_main_program = 'GarlicSim' in sys.executable
             else:
@@ -590,13 +553,9 @@ class Frame(wx.Frame):
                                     ('GarlicSim' in main_script)
             
             if not we_are_main_program:
-                dialog = \
-                    garlicsim_wx.widgets.misc.NotMainProgramWarningDialog(self)
-                try:
-                    if dialog.ShowModal() != wx.ID_YES:
-                        return
-                finally:
-                    dialog.Destroy()
+                if garlicsim_wx.widgets.misc.NotMainProgramWarningDialog.\
+                   create_and_show_modal(self) != wx.ID_YES:
+                    return
         
         # Todo: something more sensible here. Ideally should be last place you
         # saved in, but for starters can be desktop.
@@ -604,32 +563,31 @@ class Frame(wx.Frame):
         
         gui_project_vars = None
 
-        open_dialog = wx.FileDialog(self, message='Choose a file',
-                                    defaultDir=folder, defaultFile='',
-                                    wildcard=wildcard_text, style=wx.OPEN)
-        try:
-            if open_dialog.ShowModal() == wx.ID_OK:
-                path = open_dialog.GetPath()
-                
-                if self.gui_project is None:
-                    self._open_gui_project_from_path(path)
-                else:
-                    if hasattr(sys, 'frozen'):
-                        program = [sys.executable]
-                    else:
-                        program = \
-                            [sys.executable, os.path.abspath(sys.argv[0])]
-                        
-                    program.append(path)
+        path = CuteFileDialog.create_show_modal_and_get_path(
+            self, message='Choose a file', defaultDir=folder, defaultFile='',
+            wildcard=wildcard_text, style=wx.OPEN
+        )
+        
+        if path is None:
+            return
             
-                    for simpack_place in garlicsim_wx.simpack_places:
-                        program.append('__garlicsim_wx_simpack_place=%s' % \
-                                       ','.join(simpack_place))
-                    
-                    with wx_tools.CursorChanger(self, wx.CURSOR_WAIT):
-                        subprocess.Popen(program)
-        finally:
-            open_dialog.Destroy()
+        if self.gui_project is None:
+            self._open_gui_project_from_path(path)
+        else:
+            if sys_tools.frozen:
+                program = [sys.executable]
+            else:
+                program = \
+                    [sys.executable, os.path.abspath(sys.argv[0])]
+                
+            program.append(path)
+    
+            for simpack_place in garlicsim_wx.simpack_places:
+                program.append('__garlicsim_wx_simpack_place=%s' % \
+                               ','.join(simpack_place[:2]))
+            
+            with self.create_cursor_changer(wx.CURSOR_WAIT):
+                subprocess.Popen(program)
                         
             
     def _open_gui_project_from_path(self, path):
@@ -642,82 +600,81 @@ class Frame(wx.Frame):
         with TempRecursionLimitSetter(10000):
             try:
                 with open(path, 'rb') as my_file:
-                    with wx_tools.CursorChanger(self, wx.CURSOR_WAIT):
+                    with self.create_cursor_changer(wx.CURSOR_WAIT):
                         unpickler = misc.pickling.Unpickler(my_file)
                         gui_project = unpickler.load()
                 
             except Exception, exception:
-                dialog = wx.MessageDialog(
+                CuteErrorDialog.create_and_show_modal(
                     self,
                     'Error opening file:\n' + traceback.format_exc(),
-                    style=(wx.OK | wx.ICON_ERROR)
                 )
-                try:
-                    dialog.ShowModal()
-                finally:
-                    dialog.Destroy()
                 return
                         
         self.__setup_gui_project(gui_project)
 
     
     
-    def on_save(self, event=None):
-        '''Raise a dialog for saving a gui project to file.'''
+    def save_gui_project(self):
+        '''Show a dialog for saving a gui project to file.'''
         
         assert self.gui_project is not None
         
         folder = os.getcwd()
         
-        save_dialog = wx.FileDialog(self, message='Save file as...',
-                                    defaultDir=folder, defaultFile='',
-                                    wildcard=wildcard_text,
-                                    style=wx.SAVE | wx.OVERWRITE_PROMPT)
-        try:
-            if save_dialog.ShowModal() == wx.ID_OK:
-                path = save_dialog.GetPath()
-                
-                # Adding extension if got a plain file because wxPython doesn't
-                # give the checkbox that's supposed to do it on Mac:
-                path = misc_tools.add_extension_if_plain(path, '.gssp')
-                
-                
-                with TempRecursionLimitSetter(10000):
-                    try:
-                        with open(path, 'wb') as my_file:
-                            with wx_tools.CursorChanger(self, wx.CURSOR_WAIT):
-                                with self.gui_project.project.tree.lock.read:
-                                    pickler = misc.pickling.Pickler(
-                                        my_file,
-                                        protocol=2,
-                                    )
-                                    pickler.dump(self.gui_project)
+        path = CuteFileDialog.create_show_modal_and_get_path(
+            self, message='Save file as...', defaultDir=folder, defaultFile='',
+            wildcard=wildcard_text, style=wx.SAVE | wx.OVERWRITE_PROMPT
+        )
+
+        if path is None:
+            return
         
-                    except Exception, exception:
-                        error_dialog = wx.MessageDialog(
-                            self,
-                            'Error saving to file:\n' + traceback.format_exc(),
-                            style=(wx.OK | wx.ICON_ERROR)
-                        )
-                        error_dialog.ShowModal()
-                        error_dialog.Destroy()
-            
-        finally:
-            save_dialog.Destroy()
+        # Adding extension if got a plain file because wxPython doesn't
+        # give the checkbox that's supposed to do it on Mac:
+        path = misc_tools.add_extension_if_plain(path, '.gssp')
+        
+        with TempRecursionLimitSetter(10000):
+            try:
+                with open(path, 'wb') as my_file:
+                    with self.create_cursor_changer(wx.CURSOR_WAIT):
+                        with self.gui_project.project.tree.lock.read:
+                            pickler = misc.pickling.Pickler(
+                                my_file,
+                                protocol=2,
+                            )
+                            pickler.dump(self.gui_project)
+
+            except Exception, exception:
+                CuteErrorDialog.create_and_show_modal(
+                    self,
+                    'Error saving to file:\n' + traceback.format_exc(),
+                    style=(wx.OK | wx.ICON_ERROR)
+                )
+        
     
-    """    
-    def delete_gui_project(self,gui_project):
-        I did this wrong.
-        self.gui_projects.remove(gui_project)
-        self.notebook.AddPage(gui_project.main_window,"zort!")
-        self.notebook.DeletePage(0)
-        del gui_project
-    """
+        
+    def exit(self):
+        '''Exit GarlicSim.'''
+        self._post_close_event()    
+        
+    ###########################################################################
+    ### Event handlers: #######################################################
+    #                                                                         #
     
+    def _on_close(self, event):
+        if self.gui_project:
+            self.gui_project.stop_playing()
+        self.aui_manager.UnInit()
+        self.Destroy()
+        garlicsim_wx.general_misc.cute_base_timer.CuteBaseTimer.\
+            stop_timers_by_frame(self)
+        event.Skip()        
+        self.background_timer.stop()
+        
     
-    def on_key_down(self, event):
-        '''wx.EVT_KEY_DOWN handler.'''
-        key = wx_tools.Key.get_from_key_event(event)
+    def _on_key_down(self, event):
+        key = wx_tools.keyboard.Key.get_from_key_event(event)
         handler = self.key_handlers.get(key, None)
         if handler:
             handler()
@@ -725,8 +682,7 @@ class Frame(wx.Frame):
             event.Skip()
             
             
-    def on_context_menu(self, event):
-        '''wx.EVT_CONTEXT_MENU handler.'''
+    def _on_context_menu(self, event):
         abs_position = event.GetPosition()
         if abs_position == wx.DefaultPosition:
             position = (0, 0)
@@ -734,6 +690,12 @@ class Frame(wx.Frame):
             position = self.ScreenToClient(abs_position)
             
         self.PopupMenu(self.context_menu, position)
+
         
-    
-    
+    def _on_background_timer(self, event):
+        self.sync_crunchers()
+        
+    #                                                                         #
+    ### Finished event handlers. ##############################################
+    ###########################################################################
+        

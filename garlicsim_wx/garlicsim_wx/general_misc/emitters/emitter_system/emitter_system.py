@@ -10,32 +10,23 @@ See documentation of EmitterSystem for more info.
 from __future__ import with_statement
 
 import itertools
+
+from garlicsim.general_misc import freezers
 from garlicsim.general_misc import cute_iter_tools
-from garlicsim.general_misc.context_manager import ContextManager
+from garlicsim.general_misc.context_managers import ReentrantContextManager
 
 from .emitter import Emitter
 
 
-class FreezeCacheRebuildingContextManager(ContextManager):
-    '''
-    Context manager for freezing the cache rebuilding in an emitter system.
-    
-    When you do actions using this context manager, the emitters will not
-    rebuild their cache when changing their inputs/outputs. When the outermost
-    context manager has exited, all the caches for these emitters will get
-    rebuilt.
-    '''    
-    def __init__(self, emitter_system):
-        self.emitter_system = emitter_system
-        
-    def __enter__(self):
-        assert self.emitter_system._cache_rebuilding_frozen >= 0
-        self.emitter_system._cache_rebuilding_frozen += 1
-        
-    def __exit__(self, *args, **kwargs):
-        self.emitter_system._cache_rebuilding_frozen -= 1
-        if self.emitter_system._cache_rebuilding_frozen == 0:
-            self.emitter_system._recalculate_all_cache()
+
+#'''
+#Context manager for freezing the cache rebuilding in an emitter system.
+
+#When you do actions using this context manager, the emitters will not
+#rebuild their cache when changing their inputs/outputs. When the outermost
+#context manager has exited, all the caches for these emitters will get
+#rebuilt.
+#'''    
 
             
 class EmitterSystem(object):
@@ -59,10 +50,6 @@ class EmitterSystem(object):
     # to make inputs and outputs abstract.
     def __init__(self):
         
-        self._cache_rebuilding_frozen = 0
-        self.freeze_cache_rebuilding = \
-            FreezeCacheRebuildingContextManager(self)
-        
         self.emitters = set()
         
         self.bottom_emitter = Emitter(self, name='bottom')
@@ -74,6 +61,16 @@ class EmitterSystem(object):
             name='top',
         )
         self.emitters.add(self.top_emitter)
+        
+        
+    cache_rebuilding_freezer = freezers.FreezerProperty()
+
+    
+    @cache_rebuilding_freezer.on_thaw
+    def _recalculate_all_cache(self):
+        '''Recalculate the cache for all the emitters.'''
+        self.bottom_emitter._recalculate_total_callable_outputs_recursively()
+        
         
             
     def make_emitter(self, inputs=(), outputs=(), name=None):
@@ -95,13 +92,11 @@ class EmitterSystem(object):
         '''
         Remove an emitter from this system, disconnecting it from everything.
         '''
-        with self.freeze_cache_rebuilding:
+        with self.cache_rebuilding_freezer:
             emitter.disconnect_from_all()
         self.emitters.remove(emitter)
         
-        
-    def _recalculate_all_cache(self):
-        '''Recalculate the cache for all the emitters.'''
-        self.bottom_emitter._recalculate_total_callable_outputs_recursively()
+
+    
     
 

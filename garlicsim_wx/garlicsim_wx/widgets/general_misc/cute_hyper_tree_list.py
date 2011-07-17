@@ -33,6 +33,8 @@ class CuteHyperTreeList(HyperTreeList):
         HyperTreeList.__init__(self, parent, id, pos, size, style, agwStyle,
                                validator, name)
         
+        self.Bind(wx.EVT_SET_FOCUS, self.__on_set_focus)
+        
         # Hackishly generating context menu event and tree item menu event from
         # these events:
         self.GetMainWindow().Bind(EVT_COMMAND_TREE_ITEM_RIGHT_CLICK,
@@ -93,11 +95,11 @@ class CuteHyperTreeList(HyperTreeList):
         
             
     def __on_key_down(self, event):
-        if wx_tools.navigate_from_key_event(event):
+        if wx_tools.event_tools.navigate_from_key_event(event):
             return
         # Hacky, either the OS or wxPython should be doing this:
-        key = wx_tools.Key.get_from_key_event(event)
-        if key in wx_tools.menu_keys:
+        key = wx_tools.keyboard.Key.get_from_key_event(event)
+        if key in wx_tools.keyboard.keys.menu_keys:
             selection = self.GetSelection()
             if selection is not None:
                 
@@ -110,10 +112,24 @@ class CuteHyperTreeList(HyperTreeList):
                 self.GetEventHandler().ProcessEvent(new_event)
                 
             else:
-                wx_tools.post_event(self, wx.EVT_CONTEXT_MENU, self)
+                wx_tools.event_tools.post_event(
+                    self,
+                    wx.EVT_CONTEXT_MENU,
+                    self
+                )
         else:
             event.Skip()
 
+        
+    def real_set_focus(self):
+        '''Set focus on the `HyperTreeList`. Bypasses some cruft.'''
+        self.GetMainWindow().SetFocusIgnoringChildren()
+        
+            
+    def __on_set_focus(self, event):
+        if self.TopLevelParent.FindFocus() == self:
+            self.GetMainWindow().SetFocusIgnoringChildren()
+            
 
     def __on_context_menu(self, event):
         abs_position = event.GetPosition()

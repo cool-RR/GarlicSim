@@ -221,7 +221,7 @@ class GuiProject(object):
         
         self.emitter_system = emitters.EmitterSystem()
                 
-        with self.emitter_system.freeze_cache_rebuilding:
+        with self.emitter_system.cache_rebuilding_freezer:
         
             es = self.emitter_system
             
@@ -396,19 +396,19 @@ class GuiProject(object):
         Initialization related to the widgets which make up the gui project.
         '''
         
-        self.frame.Bind(wx.EVT_MENU, self.on_fork_by_editing_menu_item,
+        self.frame.Bind(wx.EVT_MENU, self._on_fork_by_editing_menu_item,
                          id=s2i("Fork by editing"))
-        self.frame.Bind(wx.EVT_MENU, self.on_fork_by_crunching_menu_item,
+        self.frame.Bind(wx.EVT_MENU, self._on_fork_by_crunching_menu_item,
                          id=s2i("Fork by crunching"))
         
         
 
-    def on_fork_by_crunching_menu_item(self, event):
+    def _on_fork_by_crunching_menu_item(self, event):
         '''Event handler for "Fork by crunching" menu item.'''
         self.fork_by_crunching()
         
         
-    def on_fork_by_editing_menu_item(self, event):
+    def _on_fork_by_editing_menu_item(self, event):
         '''Event handler for "Fork by editing" menu item.'''
         self.fork_by_editing()
 
@@ -500,12 +500,9 @@ class GuiProject(object):
     
     def make_state_creation_dialog(self):
         '''Create a dialog for creating a root state.'''
-        Dialog = self.simpack_wx_grokker.settings.STATE_CREATION_DIALOG
-        dialog = Dialog(self.frame)
-        try:
-            state = dialog.start()
-        finally:
-            dialog.Destroy()
+        state_creation_function = \
+            self.simpack_wx_grokker.settings.STATE_CREATION_FUNCTION
+        state = state_creation_function(self.frame)
         if state:
             root = self.project.root_this_state(state)
             self.tree_structure_modified_not_on_path_emitter.emit()

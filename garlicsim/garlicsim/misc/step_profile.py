@@ -276,10 +276,8 @@ class StepProfile(ArgumentsProfile):
         else:
             if hasattr(module, 'State'):
                 if issubclass(module.State, garlicsim.data_structures.State):
-                    return garlicsim.misc.simpack_tools.\
-                           _get_from_state_class(module.State)
-                
-                
+                    return garlicsim.misc.simpack_tools.getting_from_state.\
+                           get_from_state_class(module.State)
                 
                            
     def __eq__(self, other):

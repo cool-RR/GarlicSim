@@ -12,8 +12,10 @@ from __future__ import with_statement
 
 import wx
 
+from garlicsim.general_misc import freezers
 from garlicsim_wx.general_misc import wx_tools
-from garlicsim.general_misc.context_manager import ContextManager
+from garlicsim_wx.widgets.general_misc.cute_panel import CutePanel
+from garlicsim.general_misc.context_managers import ReentrantContextManager
 
 
 def ratio_to_round_degrees(ratio):
@@ -24,40 +26,34 @@ def degrees_to_ratio(degrees):
     return degrees / 360
 
 
-class Freezer(ContextManager):
-    '''
-    Freezer for not changing the `Textual`'s text value.
+#class ValueFreezer(ReentrantContextManager):
+    #'''
+    #Freezer for not changing the `Textual`'s text value.
 
-    Used as a context manager. Anything that happens inside the `with` suite
-    will not cause the `Textual` to update its text value.
+    #Used as a context manager. Anything that happens inside the `with` suite
+    #will not cause the `Textual` to update its text value.
     
-    This is useful because when the `Textual`'s value changes, some platforms
-    automatically select all the text in the `Textual`, which is really
-    annoying if you're just typing in it.
-    '''
-    def __init__(self, textual):
-        self.textual = textual
-    def __enter__(self):
-        self.textual.frozen += 1
-    def __exit__(self, *args, **kwargs):
-        self.textual.frozen -= 1
+    #This is useful because when the `Textual`'s value changes, some platforms
+    #automatically select all the text in the `Textual`, which is really
+    #annoying if you're just typing in it.
+    #'''
 
 
-class Textual(wx.Panel):
+class Textual(CutePanel):
     '''Display (and allow modifying) the hue as a number 0-359.'''
     def __init__(self, hue_selection_dialog):
         wx.Panel.__init__(self, parent=hue_selection_dialog, size=(75, 100))
-        self.SetBackgroundColour(wx_tools.get_background_color())
+        self.set_good_background_color()
+        self.SetHelpText(
+            u'Set the hue in angles (0%s-359%s).' % (unichr(176), unichr(176))
+        )
         
         self.hue_selection_dialog = hue_selection_dialog
         self.hue = hue_selection_dialog.hue
         
-        self.frozen = 0
-        self.freezer = Freezer(self)
-        
         self.main_v_sizer = wx.BoxSizer(wx.VERTICAL)
         
-        self.hue_static_text = wx.StaticText(self, label='Hue:')
+        self.hue_static_text = wx.StaticText(self, label='&Hue:')
         
         self.main_v_sizer.Add(self.hue_static_text, 0,
                               wx.ALIGN_LEFT | wx.BOTTOM, border=5)
@@ -69,7 +65,7 @@ class Textual(wx.Panel):
         self.spin_ctrl = wx.SpinCtrl(self, min=0, max=359,
                                      initial=ratio_to_round_degrees(self.hue),
                                      size=(70, -1), style=wx.SP_WRAP)
-        if wx.Platform == '__WXMAC__':
+        if wx_tools.is_mac:
             self.spin_ctrl.SetValue(ratio_to_round_degrees(self.hue))
         
         self.h_sizer.Add(self.spin_ctrl, 0)
@@ -80,28 +76,42 @@ class Textual(wx.Panel):
         
         self.SetSizerAndFit(self.main_v_sizer)
         
-        self.Bind(wx.EVT_SPINCTRL, self.on_spin, source=self.spin_ctrl)
-        self.Bind(wx.EVT_TEXT, self.on_text, source=self.spin_ctrl)
+        self.Bind(wx.EVT_SPINCTRL, self._on_spin, source=self.spin_ctrl)
+        self.Bind(wx.EVT_TEXT, self._on_text, source=self.spin_ctrl)
+        
+        
+    value_freezer = freezers.FreezerProperty()
                     
         
     def update(self):
         '''Update to show the new hue.'''
-        if not self.frozen and self.hue != self.hue_selection_dialog.hue:
+        if not self.value_freezer.frozen and \
+           self.hue != self.hue_selection_dialog.hue:
             self.hue = self.hue_selection_dialog.hue
             self.spin_ctrl.SetValue(ratio_to_round_degrees(self.hue))
     
+
             
-    def on_spin(self, event):
+    def _on_spin(self, event):
         self.hue_selection_dialog.setter(
-            degrees_to_ratio(
-                self.spin_ctrl.GetValue()
-            )
+            degrees_to_ratio(self.spin_ctrl.Value)
         )
-            
-    def on_text(self, event):
-        with self.freezer:
+
+        
+    def _on_text(self, event):
+        with self.value_freezer:
             self.hue_selection_dialog.setter(
-                degrees_to_ratio(
-                    self.spin_ctrl.GetValue()
-                )
+                degrees_to_ratio(self.spin_ctrl.Value)
             )
+
+            
+    def set_focus_on_spin_ctrl_and_select_all(self):
+        '''
+        
+        
+        The "select all" part works only on Windows and generic `wx.SpinCtrl`
+        implementations.
+        '''
+        self.spin_ctrl.SetFocus()
+        self.spin_ctrl.SetSelection(-1, -1)
+        

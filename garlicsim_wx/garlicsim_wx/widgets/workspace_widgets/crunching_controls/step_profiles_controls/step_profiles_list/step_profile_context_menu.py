@@ -23,6 +23,9 @@ class StepProfileContextMenu(cute_menu.CuteMenu):
         '''Build the context menu.'''
         
         step_profiles_list = self.step_profiles_list
+        from .step_profiles_list import StepProfilesList # blocktodo: remove
+        assert isinstance(step_profiles_list, StepProfilesList)
+        
         
         self.fork_by_crunching_button = self.Append(
             -1,
@@ -31,7 +34,7 @@ class StepProfileContextMenu(cute_menu.CuteMenu):
             'this step profile'
         )
         self.Bind(wx.EVT_MENU,
-                  step_profiles_list.on_fork_by_crunching_button,
+                  step_profiles_list._on_fork_by_crunching_button,
                   source=self.fork_by_crunching_button)
         
         
@@ -44,7 +47,7 @@ class StepProfileContextMenu(cute_menu.CuteMenu):
             ' Select all the nodes and ends that have this step profile'
         )
         self.Bind(wx.EVT_MENU,
-                  step_profiles_list.on_select_tree_members_button,
+                  step_profiles_list._on_select_tree_members_button,
                   source=self.select_tree_members_button)
         self.select_tree_members_button.Enable(False)
         
@@ -58,7 +61,7 @@ class StepProfileContextMenu(cute_menu.CuteMenu):
             ' Change the color of this step profile'
         )
         self.Bind(wx.EVT_MENU,
-                  step_profiles_list.on_change_color_button,
+                  step_profiles_list._on_change_color_button,
                   source=self.change_color_button)
         
         
@@ -69,7 +72,7 @@ class StepProfileContextMenu(cute_menu.CuteMenu):
             'profile'
         )
         self.Bind(wx.EVT_MENU,
-                  step_profiles_list.on_duplicate_and_edit_button,
+                  step_profiles_list._on_duplicate_and_edit_button,
                   source=self.duplicate_and_edit_button)
         
         
@@ -79,7 +82,7 @@ class StepProfileContextMenu(cute_menu.CuteMenu):
             ' Delete this step profile'
         )
         self.Bind(wx.EVT_MENU,
-                  step_profiles_list.step_profiles_controls.on_delete_button,
+                  step_profiles_list.step_profiles_controls._on_delete_button,
                   source=self.delete_button)
         
         

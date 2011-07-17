@@ -28,7 +28,11 @@ class StarKwargBox(wx.StaticBox):
         self.argument_control = argument_control
         
         wx.StaticBox.__init__(self, argument_control,
-                              label='Additional keyword arguments')
+                              label='&Keyword arguments')
+        self.HelpText = ('Allows you to set the values of additional '
+                         'keyword arguments that the step function accepts. '
+                         'You need to supply both the argument name and the '
+                         'argument value.')
         
         self.SetMinSize(argument_control.box_size)
         self.SetMaxSize(argument_control.box_size)
@@ -56,13 +60,13 @@ class StarKwargBox(wx.StaticBox):
         self.star_adder = StarAdder(argument_control)
         self.sizer.Add(self.star_adder, 0, wx.EXPAND | wx.ALL, border=5)
         
-        self.Parent.Bind(EVT_STAR_ADDER_PRESSED, self.on_star_adder_pressed,
+        self.Parent.Bind(EVT_STAR_ADDER_PRESSED, self._on_star_adder_pressed,
                          source=self.star_adder)
         
         
-    def on_star_adder_pressed(self, event):
+    def _on_star_adder_pressed(self, event):
         
-        with wx_tools.WindowFreezer(self.Parent.Parent):
+        with wx_tools.window_tools.WindowFreezer(self.Parent.Parent):
             star_kwarg = StarKwarg(self.argument_control, self)
             star_kwarg.MoveBeforeInTabOrder(self.star_adder)
             star_kwarg.SetFocus()
@@ -74,7 +78,7 @@ class StarKwargBox(wx.StaticBox):
         
     def layout(self):
 
-        with wx_tools.WindowFreezer(self.Parent.Parent):
+        with wx_tools.window_tools.WindowFreezer(self.Parent.Parent):
         
             self.Parent.main_h_sizer.Fit(self.Parent)
             self.Parent.Layout()
@@ -95,7 +99,7 @@ class StarKwargBox(wx.StaticBox):
         else:
             place_to_put_focus_in = self.star_adder
         
-        with wx_tools.WindowFreezer(self.Parent.Parent):
+        with wx_tools.window_tools.WindowFreezer(self.Parent.Parent):
             self.star_kwargs.remove(star_kwarg)
             self.sizer.Remove(star_kwarg)
             star_kwarg.DestroyChildren()

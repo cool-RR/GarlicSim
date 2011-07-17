@@ -11,33 +11,36 @@ import math
 import wx
 
 from garlicsim_wx.general_misc import wx_tools
+from garlicsim_wx.widgets.general_misc.cute_window import CuteWindow
 
 import garlicsim_wx
 
 
-class StateViewer(wx.Window, garlicsim_wx.widgets.WorkspaceWidget):
+class StateViewer(garlicsim_wx.widgets.WorkspaceWidget, CuteWindow):
     '''Widget for showing a state onscreen.'''
+    
     def __init__(self, frame):
-        wx.Window.__init__(self, frame, style=wx.SUNKEN_BORDER)
+        CuteWindow.__init__(self, frame, style=wx.SUNKEN_BORDER)
         garlicsim_wx.widgets.WorkspaceWidget.__init__(self, frame)
         
         self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM)
         
         self.left = None
         self.right = None
-        self.Bind(wx.EVT_PAINT, self.on_paint)
         self.radius = 60
         
         self.gui_project.active_node_changed_or_modified_emitter.add_output(
             lambda: self.load_state(self.gui_project.get_active_state())
         )
         
-    def on_paint(self, event):
-        '''Paint event handler.'''
+        self.bind_event_handlers(StateViewer)
+        
+        
+    def _on_paint(self, event):
         event.Skip()
         dc = wx.BufferedPaintDC(self)
                 
-        dc.SetBackground(wx_tools.get_background_brush())
+        dc.SetBackground(wx_tools.colors.get_background_brush())
         dc.Clear()
         
         dc.SetBrush(wx.Brush("white", wx.TRANSPARENT))

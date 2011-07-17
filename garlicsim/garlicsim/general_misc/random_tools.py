@@ -5,30 +5,36 @@
 
 import random
 
+from garlicsim.general_misc import sequence_tools
 
-def random_partition(sequence, partition_size, allow_reminder=False):
+
+def random_partitions(sequence, partition_size=None, n_partitions=None,
+                      allow_remainder=True):
     '''
     Randomly partition `sequence` into partitions of size `partition_size`.
     
+    If the sequence can't be divided into precisely equal partitions, the last
+    partition will contain less members than all the other partitions.
+    
     Example:
     
-        >>> random_partition([0, 1, 2, 3, 4, 5], 2)
-        [(0, 2), (1, 4), (3, 5)]
+        >>> random_partitions([0, 1, 2, 3, 4], 2)
+        [[0, 2], [1, 4], [3]]
+        
+    (You need to give *either* a `partition_size` *or* an `n_partitions`
+    argument, not both.)
     
+    Specify `allow_remainder=False` to enforce that the all the partition sizes
+    be equal; if there's a remainder while `allow_remainder=False`, an
+    exception will be raised.    
     '''
-    if allow_reminder:
-        raise NotImplementedError
-    if len(sequence) % partition_size != 0:
-        raise Exception("You set `allow_reminder=False`, but there's a "
-                        "reminder of %s left." % \
-                        (len(sequence) % partition_size))
     
     shuffled_sequence = shuffled(sequence)
-
-    subsequences = [shuffled_sequence[i::partition_size] for i in
-                    xrange(partition_size)]
     
-    return zip(*subsequences)
+    return sequence_tools.partitions(
+        shuffled_sequence, partition_size=partition_size,
+        n_partitions=n_partitions, allow_remainder=allow_remainder
+    )
 
 
 def shuffled(sequence):

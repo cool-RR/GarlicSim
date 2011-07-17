@@ -33,6 +33,11 @@ def consecutive_pairs(iterable, wrap_around=False):
     
     old = first_item
     
+    if not wrap_around:
+        # If `wrap_around` is `False, we avoid holding a reference to
+        # `first_item`, because it may need to be garbage-collected:
+        del first_item 
+    
     for current in iterator:
         yield (old, current)
         old = current
@@ -43,7 +48,7 @@ def consecutive_pairs(iterable, wrap_around=False):
     
 def shorten(iterable, n):
     '''
-    Shorten an iterator to length `n`.
+    Shorten an iterable to length `n`.
     
     Iterate over the given iterable, but stop after `n` iterations (Or when the
     iterable stops iteration by itself.)
@@ -98,7 +103,11 @@ def is_iterable(thing):
         
 
 def get_length(iterable):
-    '''Get the length of an iterable.'''
+    '''
+    Get the length of an iterable.
+    
+    If given an iterator, it will be exhausted.
+    '''
     i = 0
     for thing in iterable:
         i += 1
@@ -131,16 +140,31 @@ def product(*args, **kwargs):
 def iter_with(iterable, context_manager):
     '''Iterate on `iterable`, `with`ing the context manager on every `next`.'''
     
+    iterator = iter(iterable)
+    
     while True:
         
         with context_manager:
-            next_item = iterable.next()
-            # You may notice that we are not `except`ing a StopIteration here;
-            # If we get one, it'll just get propagated and end *this* iterator.
-            # todo: I just realized this will probably cause a bug where
-            # `__exit__` will get the `StopIteration`! Make failing tests and
-            # fix.
+            next_item = iterator.next()
+            # You may notice that we are not `except`ing a `StopIteration`
+            # here; If we get one, it'll just get propagated and end *this*
+            # iterator. todo: I just realized this will probably cause a bug
+            # where `__exit__` will get the `StopIteration`! Make failing tests
+            # and fix.
         
         yield next_item
         
         
+def izip_longest(*iterables, **kwargs):
+    # This is a really obfuscated algorithm, simplify and/or explain
+    fill_value = kwargs.get('fillvalue', None)
+    def sentinel(counter=([fill_value] * (len(iterables) - 1)).pop):
+        yield counter()
+    fillers = itertools.repeat(fill_value)
+    iterables = [itertools.chain(iterable, sentinel(), fillers) for iterable
+                 in iterables]
+    try:
+        for tuple_ in itertools.izip(*iterables):
+            yield tuple_
+    except IndexError:
+        raise StopIteration

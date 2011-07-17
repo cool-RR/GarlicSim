@@ -11,13 +11,14 @@ import wx
 
 from garlicsim.general_misc import misc_tools
 from garlicsim_wx.general_misc import wx_tools
+from garlicsim_wx.widgets.general_misc.cute_panel import CutePanel
 
 from .name_text_ctrl import NameTextCtrl
 from .value_text_ctrl import ValueTextCtrl
 from .close_button import CloseButton
 
 
-class StarKwarg(wx.Panel):
+class StarKwarg(CutePanel):
     '''
     Widget for specifying an extraneous keyword argument (for `**kwargs`).
     
@@ -25,8 +26,8 @@ class StarKwarg(wx.Panel):
     '''
     def __init__(self, argument_control, star_kwarg_box, name='', value=''):
         wx.Panel.__init__(self, argument_control)
-        if wx.Platform == '__WXGTK__':
-            self.SetBackgroundColour(wx_tools.get_background_color())
+        if wx_tools.is_gtk:
+            self.set_good_background_color()
         
         self.argument_control = argument_control
         
@@ -57,9 +58,7 @@ class StarKwarg(wx.Panel):
         
         self.SetSizer(self.main_h_sizer)
         
-        self.Bind(wx.EVT_BUTTON, lambda event: self.remove(),
-                  source=self.close_button)
-        
+        self.bind_event_handlers(StarKwarg)
 
         
     def remove(self):
@@ -76,3 +75,6 @@ class StarKwarg(wx.Panel):
         '''Get the value of the kwarg as a string.'''
         return self.value_text_ctrl.GetValue()
         
+    
+    def _on_close_button(self, event):
+        self.remove()

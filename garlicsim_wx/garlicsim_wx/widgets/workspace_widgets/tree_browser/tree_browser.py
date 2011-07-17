@@ -32,7 +32,7 @@ connector_length = 10 # length of connecting line between elements
 
 
 my_color_replaced_bitmap = \
-    caching.cache(max_size=80)(wx_tools.color_replaced_bitmap)
+    caching.cache(max_size=80)(wx_tools.bitmap_tools.color_replaced_bitmap)
 
 
 class TreeBrowser(ScrolledPanel, WorkspaceWidget):
@@ -44,7 +44,7 @@ class TreeBrowser(ScrolledPanel, WorkspaceWidget):
         WorkspaceWidget.__init__(self, frame)
         
         self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM)
-        self.SetBackgroundColour(wx_tools.get_background_color())
+        self.set_good_background_color()
         
         self.SetupScrolling()
         #self.SetScrollRate(20,20)
@@ -59,10 +59,7 @@ class TreeBrowser(ScrolledPanel, WorkspaceWidget):
         #self.Centre()
         #self.SetVirtualSize((1000,1000))
 
-        self.Bind(wx.EVT_PAINT, self.on_paint)
-        self.Bind(wx.EVT_SIZE, self.on_size)
-        self.Bind(wx.EVT_MOUSE_EVENTS, self.on_mouse_event)
-        self.Bind(wx.EVT_KEY_DOWN, self.on_key_down)
+        self.bind_event_handlers(TreeBrowser)
 
         self.tree_remapping_flag = False
         self.recalculation_flag = False
@@ -114,16 +111,13 @@ class TreeBrowser(ScrolledPanel, WorkspaceWidget):
         
         self.elements = {}
         for key in elements_raw:
-            stream = pkg_resources.resource_stream(images_package,
-                                                   elements_raw[key])
-            self.elements[key] = wx.BitmapFromImage(
-                wx.ImageFromStream(
-                    stream,
-                    wx.BITMAP_TYPE_ANY
+            self.elements[key] = \
+                wx_tools.bitmap_tools.bitmap_from_pkg_resources(
+                    images_package,
+                    elements_raw[key]
                 )
-            )
 
-    def on_paint(self, event):
+    def _on_paint(self, event):
         '''Refresh the tree browser.'''
 
         event.Skip()
@@ -144,7 +138,7 @@ class TreeBrowser(ScrolledPanel, WorkspaceWidget):
         dc = NiftyPaintDC(self, self.gui_project,
                           self.CalcScrolledPosition((0, 0)), self)
         
-        dc.SetBackground(wx_tools.get_background_brush())
+        dc.SetBackground(wx_tools.colors.get_background_brush())
         dc.Clear()
         
         (self.clickable_map, (width, height)) = \
@@ -155,12 +149,11 @@ class TreeBrowser(ScrolledPanel, WorkspaceWidget):
         self.SetVirtualSize((width,height))
         
         
-    def on_size(self, e=None):
+    def _on_size(self, event):
         self.Refresh()
-        if e is not None:
-            e.Skip()
+        event.Skip()
 
-    def on_mouse_event(self, e):
+    def _on_mouse_events(self, e):
         #todo: should catch drag to outside of the window
         #(x,y)=self.CalcUnscrolledPosition(e.GetPositionTuple())
 
@@ -207,7 +200,7 @@ class TreeBrowser(ScrolledPanel, WorkspaceWidget):
         return None
 
                 
-    def on_key_down(self, event):
+    def _on_key_down(self, event):
         self.frame.ProcessEvent(event)
 
 
@@ -277,7 +270,7 @@ class NiftyPaintDC(wx.BufferedPaintDC):
             bitmap = my_color_replaced_bitmap(
                 self.tree_browser.elements['Block'],
                 (0, 255, 0),
-                wx_tools.wx_color_to_big_rgb(color)
+                wx_tools.colors.wx_color_to_big_rgb(color)
             )
             bitmap_size = bitmap.GetSize()
             self.gc.DrawBitmap(bitmap, point[0], point[1],
@@ -309,7 +302,7 @@ class NiftyPaintDC(wx.BufferedPaintDC):
             bitmap = my_color_replaced_bitmap(
                 self.tree_browser.elements[type],
                 (0, 255, 0),
-                wx_tools.wx_color_to_big_rgb(color)
+                wx_tools.colors.wx_color_to_big_rgb(color)
             )
             bitmap_size = bitmap.GetSize()
             self.gc.DrawBitmap(bitmap, point[0], point[1],
@@ -425,7 +418,7 @@ class NiftyPaintDC(wx.BufferedPaintDC):
         bitmap = my_color_replaced_bitmap(
             self.tree_browser.elements['Untouched End'],
             (0, 255, 0),
-            wx_tools.wx_color_to_big_rgb(color)
+            wx_tools.colors.wx_color_to_big_rgb(color)
         )
         self.DrawBitmapPoint(bitmap, point, useMask=True)
         bitmap_size = bitmap.GetSize()

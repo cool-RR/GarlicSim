@@ -18,6 +18,7 @@ import wx
 from garlicsim.general_misc import caching
 from garlicsim.general_misc import cute_iter_tools
 from garlicsim_wx.general_misc import wx_tools
+from garlicsim_wx.widgets.general_misc.cute_panel import CutePanel
 from garlicsim_wx.general_misc import color_tools
 
 BIG_LENGTH = 221
@@ -38,13 +39,13 @@ def make_bitmap(lightness=1, saturation=1):
     assert isinstance(bitmap, wx.Bitmap)
     dc = wx.MemoryDC(bitmap)
     
-    dc.SetBrush(wx_tools.get_background_brush())
+    dc.SetBrush(wx_tools.colors.get_background_brush())
     dc.SetPen(wx.TRANSPARENT_PEN)
     dc.DrawRectangle(-5, -5, BIG_LENGTH + 10, BIG_LENGTH + 10)
     
     center_x = center_y = BIG_LENGTH // 2 
-    background_color_rgb = wx_tools.wx_color_to_rgb(
-        wx_tools.get_background_color()
+    background_color_rgb = wx_tools.colors.wx_color_to_rgb(
+        wx_tools.colors.get_background_color()
     )
     
     for x, y in cute_iter_tools.product(xrange(BIG_LENGTH),
@@ -79,7 +80,7 @@ def make_bitmap(lightness=1, saturation=1):
                     rgb
                 )
                 
-            color = wx_tools.rgb_to_wx_color(rgb)
+            color = wx_tools.colors.rgb_to_wx_color(rgb)
             pen = wx.Pen(color)
             dc.SetPen(pen)
             
@@ -88,57 +89,132 @@ def make_bitmap(lightness=1, saturation=1):
     return bitmap
 
 
-class Wheel(wx.Panel):
+class Wheel(CutePanel):
     '''
-    Color wheel displaying current hue and allows moving to different hue.
+    Color wheel that displays current hue and allows moving to different hue.
     '''
     def __init__(self, hue_selection_dialog):
+        style = (wx.NO_BORDER | wx.WANTS_CHARS)
         wx.Panel.__init__(self, parent=hue_selection_dialog,
-                          size=(BIG_LENGTH, BIG_LENGTH))
+                          size=(BIG_LENGTH, BIG_LENGTH), style=style)
         self.SetDoubleBuffered(True)
+        self.SetHelpText('Click any hue in the wheel to change to it.')
         self.hue_selection_dialog = hue_selection_dialog
         self.hue = hue_selection_dialog.hue
         self.bitmap = make_bitmap(hue_selection_dialog.lightness,
                                   hue_selection_dialog.saturation)
-        self._calculate_angle()
-        self._pen = wx.Pen(
+        self._indicator_pen = wx.Pen(
             wx.Colour(255, 255, 255) if hue_selection_dialog.lightness < 0.5
             else wx.Colour(0, 0, 0),
-            width=2,
-            style=wx.DOT
+            width=1,
+            style=wx.SOLID
+        )
+        self._focus_pen = wx_tools.drawing_tools.pens.get_focus_pen(
+            color=wx_tools.colors.mix_wx_color(
+                0.7,
+                wx.NamedColour('black'),
+                wx_tools.colors.get_background_color()
+            ),
+            dashes=[2, 2]
         )
         self._cursor_set_to_bullseye = False
         
-        self.Bind(wx.EVT_PAINT, self.on_paint)
-        self.Bind(wx.EVT_MOUSE_EVENTS, self.on_mouse)
+        self.bind_event_handlers(Wheel)
         
-    
-    def on_paint(self, event):
-        dc = wx.BufferedPaintDC(self)
-                    
-        dc.DrawBitmap(self.bitmap, 0, 0)
 
+    @property
+    def angle(self):
+        '''Current angle of hue marker. (In radians.)'''
+        return ((self.hue - 0.25) * 2 * math.pi)
         
-        #######################################################################
-        # Drawing dashed line which marks the selected color:
         
+    def update(self):
+        '''If hue changed, show new hue.'''
+        if self.hue != self.hue_selection_dialog.hue:
+            self.hue = self.hue_selection_dialog.hue
+            self.Refresh()
+            
+    
+    def nudge_hue(self, direction=1, amount=0.005):
+        assert direction in (-1, 1)
+        self.hue_selection_dialog.setter(
+            (self.hue_selection_dialog.getter() + direction * amount) % 1
+        )
+        
+            
+    ###########################################################################
+    ### Event handlers: #######################################################
+    #                                                                         #
+    __key_map = {
+        wx_tools.keyboard.Key(wx.WXK_UP):
+            lambda self: self.nudge_hue(direction=1),
+        wx_tools.keyboard.Key(wx.WXK_DOWN):
+            lambda self: self.nudge_hue(direction=-1),
+        wx_tools.keyboard.Key(wx.WXK_UP, cmd=True):
+            lambda self: self.nudge_hue(direction=1, amount=0.02),
+        wx_tools.keyboard.Key(wx.WXK_DOWN, cmd=True):
+            lambda self: self.nudge_hue(direction=-1, amount=0.02),    
+        # Handling dialog-closing here because wxPython doesn't
+        # automatically pass Enter to the dialog itself
+        wx_tools.keyboard.Key(wx.WXK_RETURN):
+            lambda self: self.hue_selection_dialog.EndModal(wx.ID_OK),
+        wx_tools.keyboard.Key(wx.WXK_NUMPAD_ENTER):
+            lambda self: self.hue_selection_dialog.EndModal(wx.ID_OK)
+    }
+            
+    def _on_key_down(self, event):
+        key = wx_tools.keyboard.Key.get_from_key_event(event)
+        try:
+            handler = self.__key_map[key]
+        except KeyError:
+            if not wx_tools.event_tools.navigate_from_key_event(event):
+                event.Skip()
+        else:
+            return handler(self)
+            
+            
+    def _on_set_focus(self, event):
+        event.Skip()
+        self.Refresh()
+        
+
+    def _on_kill_focus(self, event):
+        event.Skip()
+        self.Refresh()
+        
+        
+    def _on_paint(self, event):
+
+        ### Preparing: ########################################################
+        dc = wx.BufferedPaintDC(self)
         gc = wx.GraphicsContext.Create(dc)
         assert isinstance(gc, wx.GraphicsContext)
-        gc.SetPen(self._pen)
-        cx, cy = BIG_LENGTH // 2, BIG_LENGTH // 2
-        start_x, start_y = cx + SMALL_RADIUS * math.sin(self.angle), \
-                           cy + SMALL_RADIUS * math.cos(self.angle)
-        end_x, end_y = cx + BIG_RADIUS * math.sin(self.angle), \
-                       cy + BIG_RADIUS * math.cos(self.angle)
-        gc.StrokeLine(start_x, start_y, end_x, end_y)
+        #######################################################################
+                    
+        ### Drawing wheel: ####################################################
+        dc.DrawBitmap(self.bitmap, 0, 0)
+        #######################################################################
+        
+        ### Drawing indicator for selected hue: ###############################
+        gc.SetPen(self._indicator_pen)
+        center_x, center_y = BIG_LENGTH // 2, BIG_LENGTH // 2
+        gc.Translate(center_x, center_y); gc.Rotate(self.angle)
+        gc.DrawRectangle(SMALL_RADIUS - 1, -2,
+                         (BIG_RADIUS - SMALL_RADIUS) + 1, 4)
+        #######################################################################
+        
+        ### Drawing focus rectangle if has focus: #############################
+        if self.has_focus():
+            gc.SetPen(self._focus_pen)
+            gc.DrawRectangle(SMALL_RADIUS - 3, -4,
+                             (BIG_RADIUS - SMALL_RADIUS) + 5, 8)
+        #######################################################################
 
-        #dc.SetPen(self._pen)
-        #dc.DrawLine(start_x, start_y, end_x, end_y)
-                
+        ######################### Finished drawing. ###########################
         
                 
         
-    def on_mouse(self, event):
+    def _on_mouse_events(self, event):
         
         center_x = center_y = BIG_LENGTH // 2 
         x, y = event.GetPosition()
@@ -157,9 +233,10 @@ class Wheel(wx.Panel):
             self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
             self._cursor_set_to_bullseye = False
 
+        if event.LeftIsDown() or event.LeftDown():
+            self.SetFocus()            
             
         if event.LeftIsDown():
-            
             if inside_wheel and not self.HasCapture():
                 self.CaptureMouse()
                 
@@ -172,21 +249,7 @@ class Wheel(wx.Panel):
         else: # Left mouse button is up
             if self.HasCapture():
                 self.ReleaseMouse()
-            
+    #                                                                         #
+    ### Finished event handlers. ##############################################
+    ###########################################################################
                 
-        
-    def _calculate_angle(self):
-        '''Calculate the angle to represent current hue and put in `.angle`.'''
-        self.angle = - (2 * self.hue - 1) * math.pi
-        
-        
-    def update(self):
-        '''If hue changed, show new hue.'''
-        if self.hue != self.hue_selection_dialog.hue:
-            self.hue = self.hue_selection_dialog.hue
-            self._calculate_angle()
-            self.Refresh()
-            
-        
-        
-    

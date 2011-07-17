@@ -11,13 +11,22 @@ import types
 
 import wx
 
+from garlicsim_wx.general_misc import wx_tools
+from garlicsim_wx.widgets.general_misc.cute_window import CuteWindow
+
 import garlicsim_wx
 import garlicsim
 
 from .argument_control import colors
 
 
-class StepFunctionInput(wx.ComboBox):
+step_function_help_text = ('The step function to be used for crunching the '
+                           'simulation. You may type the name of a different '
+                           'step function or choose one from the given '
+                           'options.')
+
+
+class StepFunctionInput(wx.ComboBox, CuteWindow):
     '''
     Widget for specifying a step function.
     
@@ -39,19 +48,17 @@ class StepFunctionInput(wx.ComboBox):
                 step_functions_list.remove(value)
             step_functions_list.insert(0, value)
         
-        width = 250 if wx.Platform == '__WXMSW__' else 300
+        width = 250 if wx_tools.is_win else 300
             
         wx.ComboBox.__init__(self, step_profile_dialog, value=value,
                              choices=step_functions_list, size=(width, -1))
+        self.HelpText = step_function_help_text
         
         self._original_background_color = self.GetBackgroundColour()
         
         self.error_mode = False
         
-        self.Bind(wx.EVT_TEXT, self.on_text)
-        self.Bind(wx.EVT_COMBOBOX, self.on_combo_box)
-        
-        self.Bind(wx.EVT_KILL_FOCUS, self.on_kill_focus)
+        self.bind_event_handlers(StepFunctionInput)
 
         
     def select_step_function(self, step_function, step_function_string):
@@ -111,15 +118,15 @@ class StepFunctionInput(wx.ComboBox):
                                     "It's not even a callable." % text)
             
         
-    def on_text(self, event):
+    def _on_text(self, event):
         self.try_to_parse_text_and_set()
         
         
-    def on_combo_box(self, event):
+    def _on_combobox(self, event):
         self.try_to_parse_text_and_set()
         
         
-    def on_kill_focus(self, event):
+    def _on_kill_focus(self, event):
         event.Skip()
         if self.FindFocus() != self:
             try:

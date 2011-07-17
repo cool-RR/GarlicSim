@@ -16,15 +16,14 @@ import wx
 from garlicsim.general_misc import address_tools
 from garlicsim.general_misc import cute_inspect
 from garlicsim_wx.widgets.general_misc.cute_dialog import CuteDialog
-from garlicsim_wx.general_misc import wx_tools
-from garlicsim_wx.widgets.general_misc.error_dialog import ErrorDialog
+from garlicsim_wx.widgets.general_misc.cute_error_dialog import CuteErrorDialog
 
 import garlicsim
 import garlicsim_wx
 from garlicsim.misc import StepProfile
 
 from .static_function_text import StaticFunctionText
-from .step_function_input import StepFunctionInput
+from .step_function_input import StepFunctionInput, step_function_help_text
 from .argument_control import ArgumentControl, ResolveFailed
 from .already_exists_dialog import AlreadyExistsDialog
 from .step_functions_to_argument_dicts import StepFunctionsToArgumentDicts
@@ -62,8 +61,6 @@ class StepProfileDialog(CuteDialog):
                 'Create a new step profile and fork with it'
         CuteDialog.__init__(self, step_profiles_controls.GetTopLevelParent(),
                             title=title)
-        
-        self.SetDoubleBuffered(True)
         
         self.original_step_profile = original_step_profile = step_profile
         
@@ -146,7 +143,9 @@ class StepProfileDialog(CuteDialog):
 
         
         
-        self.static_text = wx.StaticText(self, label="Choose a step function:")
+        self.static_text = wx.StaticText(self,
+                                         label='Choose a step &function:')
+        self.static_text.HelpText = step_function_help_text
         
         self.main_v_sizer.Add(self.static_text,
                               0,
@@ -173,6 +172,8 @@ class StepProfileDialog(CuteDialog):
                 lightness=0.8,
                 saturation=1,
                 dialog_title='Select hue for new step profile',
+                help_text=('Shows the hue of the to-be-created step profile. '
+                           'Click to change.'),
                 size=(25, 20)
             )
         
@@ -234,22 +235,23 @@ class StepProfileDialog(CuteDialog):
             border=10
         )
         
-        ok_title = 'Create step profile' if not and_fork else \
-                   'Create step profile and fork with it'
-        self.ok_button = wx.Button(self, wx.ID_OK, title)
+        ok_title = 'Create &step profile' if not and_fork else \
+                   'Create &step profile and fork with it'
+        self.ok_button = wx.Button(self, wx.ID_OK, ok_title)
+        self.ok_button.HelpText = 'Create the new step profile.' if not \
+            and_fork else 'Create the new step profile and fork with it.'
         self.dialog_button_sizer.AddButton(self.ok_button)
         self.ok_button.SetDefault()
         self.dialog_button_sizer.SetAffirmativeButton(self.ok_button)
-        self.Bind(wx.EVT_BUTTON, self.on_ok, source=self.ok_button)
         
         self.cancel_button = wx.Button(self, wx.ID_CANCEL, 'Cancel')
         self.dialog_button_sizer.AddButton(self.cancel_button)
-        self.Bind(wx.EVT_BUTTON, self.on_cancel, source=self.cancel_button)
         self.dialog_button_sizer.Realize()
     
         
         self.SetSizer(self.main_v_sizer)
         self.main_v_sizer.Fit(self)
+        self.bind_event_handlers(StepProfileDialog)
         
         # Finished setting up sizers and widgets.
         #######################################################################
@@ -258,7 +260,7 @@ class StepProfileDialog(CuteDialog):
     def set_step_function(self, step_function):
         '''Set the step function to be used in our new step profile.'''
         if step_function != self.step_function:
-            with wx_tools.WindowFreezer(self): 
+            with self.freezer: 
                 self.step_function = step_function
                 self.static_function_text.set_step_function(step_function)
                 self.argument_control.set_step_function(step_function)
@@ -291,26 +293,20 @@ class StepProfileDialog(CuteDialog):
         return super(StepProfileDialog, self).ShowModal()
     
     
-    def on_ok(self, event):
+    def _on_ok_button(self, event):
         try:
             self.step_function_input.parse_text_and_set()
         except Exception, exception:
-            error_dialog = ErrorDialog(self, exception.args[0])
-            try:
-                error_dialog.ShowModal()
-            finally:
-                error_dialog.Destroy()
+            CuteErrorDialog.create_and_show_modal(self,
+                                              exception.args[0])
             self.step_function_input.SetFocus()
             return
         
         try:
             self.argument_control.save()
         except ResolveFailed, resolve_failed_exception:
-            error_dialog = ErrorDialog(self, resolve_failed_exception.message)
-            try:
-                error_dialog.ShowModal()
-            finally:
-                error_dialog.Destroy()
+            CuteErrorDialog.create_and_show_modal(self,
+                                              resolve_failed_exception.message)
             resolve_failed_exception.widget.SetFocus()
             return
 
@@ -337,7 +333,7 @@ class StepProfileDialog(CuteDialog):
         
         
         if step_profile in self.gui_project.step_profiles:
-            result = AlreadyExistsDialog.create_show_modal_and_destroy(
+            result = AlreadyExistsDialog.create_and_show_modal(
                 self,
                 step_profile,
                 and_fork=self.and_fork
@@ -355,7 +351,7 @@ class StepProfileDialog(CuteDialog):
         self.EndModal(wx.ID_OK)
     
     
-    def on_cancel(self, event):
+    def _on_cancel_button(self, event):
         # ...
         self.step_profile = None
         self.EndModal(wx.ID_CANCEL)

@@ -2,7 +2,7 @@
 # This program is distributed under the LGPL2.1 license.
 
 '''
-Defines the `` class.
+Defines the `StepProfilesControls` class.
 
 See its documentation for more details.
 '''
@@ -11,7 +11,8 @@ import pkg_resources
 import wx
 
 from garlicsim_wx.general_misc import wx_tools
-from garlicsim_wx.widgets.general_misc.error_dialog import ErrorDialog
+from garlicsim_wx.widgets.general_misc.cute_error_dialog import CuteErrorDialog
+from garlicsim_wx.widgets.general_misc.cute_panel import CutePanel
 
 import garlicsim
 import garlicsim_wx
@@ -23,7 +24,7 @@ from . import images as __images_package
 images_package = __images_package.__name__
 
     
-class StepProfilesControls(wx.Panel):
+class StepProfilesControls(CutePanel):
     '''Widget for manipulating the step profiles used in the gui project.'''
     
     def __init__(self, parent, frame, *args, **kwargs):
@@ -36,7 +37,7 @@ class StepProfilesControls(wx.Panel):
         
         wx.Panel.__init__(self, parent, *args, **kwargs)
         
-        self.SetBackgroundColour(wx_tools.get_background_color())
+        self.set_good_background_color()
         
         self.SetToolTipString('Add, remove or organize step profiles.')
 
@@ -56,24 +57,18 @@ class StepProfilesControls(wx.Panel):
         
         self.main_v_sizer.Add(self.button_h_sizer, 0, wx.ALIGN_RIGHT)
         
-        new_image = wx.BitmapFromImage(
-            wx.ImageFromStream(
-                pkg_resources.resource_stream(images_package,
-                                              'new.png'),
-                wx.BITMAP_TYPE_ANY
-            )
+        new_image = wx_tools.bitmap_tools.bitmap_from_pkg_resources(
+            images_package,
+            'new.png'
         )
         self.new_button = wx.BitmapButton(self, -1, new_image)
         self.new_button.SetToolTipString('Create a new step profile.')
         
         self.button_h_sizer.Add(self.new_button, 0, wx.RIGHT, 8)
         
-        delete_image = wx.BitmapFromImage(
-            wx.ImageFromStream(
-                pkg_resources.resource_stream(images_package,
-                                              'trash.png'),
-                wx.BITMAP_TYPE_ANY
-            )
+        delete_image = wx_tools.bitmap_tools.bitmap_from_pkg_resources(
+            images_package,
+            'trash.png'
         )
         self.delete_button = wx.BitmapButton(self, -1, delete_image)
         self.delete_button.SetToolTipString(
@@ -85,10 +80,7 @@ class StepProfilesControls(wx.Panel):
         
         self.SetSizer(self.main_v_sizer)
         
-        
-        self.Bind(wx.EVT_BUTTON, self.on_new_button, source=self.new_button)
-        self.Bind(wx.EVT_BUTTON, self.on_delete_button,
-                  source=self.delete_button)
+        self.bind_event_handlers(StepProfilesControls)
 
         
     def _recalculate(self):
@@ -153,7 +145,7 @@ class StepProfilesControls(wx.Panel):
             return
         tree_step_profiles = self.gui_project.project.tree.get_step_profiles()
         if step_profile in tree_step_profiles:
-            ErrorDialog.create_show_modal_and_destroy(
+            CuteErrorDialog.create_and_show_modal(
                 self,
                 "The step profile `%s` is currently used in the tree; it may "
                 "not be deleted." % step_profile.__repr__(
@@ -167,11 +159,11 @@ class StepProfilesControls(wx.Panel):
             self.gui_project.step_profiles.remove(step_profile)
             
             
-    def on_new_button(self, event):
+    def _on_new_button(self, event):
         self.show_step_profile_editing_dialog(step_profile=None)
     
     
-    def on_delete_button(self, event):
+    def _on_delete_button(self, event):
         self.try_delete_step_profile(
             self.step_profiles_list.get_selected_step_profile()
         )

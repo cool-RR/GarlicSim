@@ -1,12 +1,16 @@
 '''
 simpack_name description.
 '''
-# (The above docstring should be in ReStructuredText.)
+# (The above docstring should be in reStructuredText.)
 
 from .state import State
 
 # Human-readable name of your simpack:
 name = '''simpack_name'''
 
-# List of tags like 'game-theory', 'electronics', 'climate', etc.
-tags = []
+# Version number:
+__version__ = '0.1'
+
+# Tuple of tags that the simpack is related to, like 'game-theory',
+# 'electronics', 'climate', 'high-cpu' etc.
+tags = ()

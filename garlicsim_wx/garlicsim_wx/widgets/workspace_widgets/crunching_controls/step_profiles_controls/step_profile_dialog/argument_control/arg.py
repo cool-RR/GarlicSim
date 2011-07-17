@@ -10,11 +10,12 @@ See its documentation for more details.
 import wx
 
 from garlicsim_wx.general_misc import wx_tools
+from garlicsim_wx.widgets.general_misc.cute_panel import CutePanel
 
 from .value_text_ctrl import ValueTextCtrl
 
 
-class Arg(wx.Panel):
+class Arg(CutePanel):
     '''
     Widget for specifying a named argument to the step function.
 
@@ -22,8 +23,8 @@ class Arg(wx.Panel):
     '''
     def __init__(self, argument_control, name, value=''):
         wx.Panel.__init__(self, argument_control)
-        if wx.Platform == '__WXGTK__':
-            self.SetBackgroundColour(wx_tools.get_background_color())
+        if wx_tools.is_gtk:
+            self.set_good_background_color()
         
         self.argument_control = argument_control
         self.name = name

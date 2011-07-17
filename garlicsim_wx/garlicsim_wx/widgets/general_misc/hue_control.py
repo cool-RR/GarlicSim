@@ -16,25 +16,26 @@ import wx
 from garlicsim_wx.widgets.general_misc.hue_selection_dialog \
      import HueSelectionDialog
 from garlicsim_wx.general_misc import wx_tools
+from garlicsim_wx.widgets.general_misc.cute_window import CuteWindow
 from garlicsim_wx.general_misc.emitters import Emitter
 
 
-class HueControl(wx.Window):
+class HueControl(CuteWindow):
     '''
     Widget for displaying (and possibly modifying) a hue.
     
     Clicking on the hue will open a dialog for changing it.
     '''
     def __init__(self, parent, getter, setter, emitter=None, lightness=1,
-                 saturation=1, dialog_title='Select hue', size=(25, 10)):
+                 saturation=1, dialog_title='Select hue',
+                 help_text='Shows the current hue. Click to change.',
+                 size=(25, 10)):
         
-        wx.Window.__init__(self, parent, size=size, style=wx.SIMPLE_BORDER)
+        CuteWindow.__init__(self, parent, size=size, style=wx.SIMPLE_BORDER)
         
         self.getter = getter
         
-        self.setter = setter
-                
-        
+        self.setter = setter                
         
         self.lightness = lightness
         
@@ -42,11 +43,11 @@ class HueControl(wx.Window):
         
         self.dialog_title = dialog_title
         
+        self.SetHelpText(help_text)
         
         self._pen = wx.Pen(wx.Colour(0, 0, 0), width=0, style=wx.TRANSPARENT)
         
-        self.Bind(wx.EVT_PAINT, self.on_paint)
-        self.Bind(wx.EVT_LEFT_DOWN, self.on_mouse_left_down)
+        self.bind_event_handlers(HueControl)
         
         if emitter:
             assert isinstance(emitter, Emitter)
@@ -64,43 +65,22 @@ class HueControl(wx.Window):
                 self.emitter.emit()
             self.setter = new_setter
             
-        
     
-    def on_paint(self, event):
-        dc = wx.PaintDC(self)
-        color = wx_tools.hls_to_wx_color(
-            (
-                self.getter(),
-                self.lightness,
-                self.saturation
-            )
-        )
-        dc.SetBrush(wx.Brush(color))
-        dc.SetPen(self._pen)
-        width, height = self.GetSize()
-        dc.DrawRectangle(-5, -5, width+10, height+10)
-                
+    @property
+    def extreme_negative_wx_color(self):
+        return wx.NamedColour('Black') if self.lightness > 0.5 else \
+               wx.NamedColour('White')
     
-    def on_mouse_left_down(self, event):
-        self.open_editing_dialog()
-      
-        
+    
     def open_editing_dialog(self):
         '''Open a dialog to edit the hue.'''
         old_hue = self.getter()
         
-        with wx_tools.CursorChanger(self, wx.CURSOR_WAIT):
-            hue_selection_dialog = HueSelectionDialog(
-                self.GetTopLevelParent(), self.getter, self.setter,
-                self.emitter,
-                lightness=self.lightness, saturation=self.saturation,
-                title=self.dialog_title
-            )
-        
-        try:
-            hue_selection_dialog.ShowModal()
-        finally:
-            hue_selection_dialog.Destroy()
+        hue_selection_dialog = HueSelectionDialog.create_and_show_modal(
+            self.TopLevelParent, self.getter, self.setter, self.emitter,
+            lightness=self.lightness, saturation=self.saturation,
+            title=self.dialog_title
+        )
 
             
     def update(self):
@@ -111,3 +91,56 @@ class HueControl(wx.Window):
     def Destroy(self):
         self.emitter.remove_output(self.update)
         super(HueControl, self).Destroy()
+
+        
+    ### Event handlers: #######################################################
+    #                                                                         #        
+    def _on_paint(self, event):
+        dc = wx.BufferedPaintDC(self)
+        color = wx_tools.colors.hls_to_wx_color(
+            (
+                self.getter(),
+                self.lightness,
+                self.saturation
+            )
+        )
+        dc.SetBrush(wx.Brush(color))
+        dc.SetPen(self._pen)
+        width, height = self.ClientSize
+        dc.DrawRectangle(-5, -5, width+10, height+10)
+
+        if self.has_focus():
+            graphics_context = wx.GraphicsContext.Create(dc)
+            assert isinstance(graphics_context, wx.GraphicsContext)
+            graphics_context.SetPen(
+                wx_tools.drawing_tools.pens.get_focus_pen(
+                    color=self.extreme_negative_wx_color
+                )
+            )
+            graphics_context.SetBrush(wx.TRANSPARENT_BRUSH)
+            graphics_context.DrawRectangle(2, 2,
+                                           width - 5, height - 5)
+        
+    
+    def _on_left_down(self, event):
+        self.open_editing_dialog()
+    
+        
+    def _on_char(self, event):
+        char = unichr(event.GetUniChar())
+        if char == ' ':
+            self.open_editing_dialog()
+        else:
+            event.Skip()
+            
+            
+    def _on_set_focus(self, event):
+        event.Skip()
+        self.Refresh()
+        
+
+    def _on_kill_focus(self, event):
+        event.Skip()
+        self.Refresh()   
+    #                                                                         #
+    ### Finished event handlers. ##############################################

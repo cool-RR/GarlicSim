@@ -35,12 +35,9 @@ class SeekBar(wx.Panel, WorkspaceWidget):
         WorkspaceWidget.__init__(self, frame)
         
         self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM)
-        self.SetBackgroundColour(wx_tools.get_background_color())
+        self.set_good_background_color()
         
-        self.Bind(wx.EVT_PAINT, self.on_paint)
-        self.Bind(wx.EVT_SIZE, self.on_size)
-        self.Bind(wx.EVT_MOUSE_EVENTS, self.on_mouse_event)
-        self.Bind(wx.EVT_KEY_DOWN, self.on_key_down)
+        self.bind_event_handlers(SeekBar)
 
         self.zoom = 1.
         self.start = 0.
@@ -69,10 +66,8 @@ class SeekBar(wx.Panel, WorkspaceWidget):
         )
 
 
-    def on_paint(self, event):
-        '''Refresh the seek-bar.'''
+    def _on_paint(self, event):
         event.Skip()
-        
 
         self.view_changed_flag = False
         self.active_node_changed_or_modified_flag = False
@@ -90,7 +85,7 @@ class SeekBar(wx.Panel, WorkspaceWidget):
         end = self.start + (w / self.zoom)
         dc = wx.BufferedPaintDC(self)
 
-        dc.SetBackground(wx_tools.get_background_brush())
+        dc.SetBackground(wx_tools.colors.get_background_brush())
         dc.Clear()
         
         #dc.DrawRectangle(3,3,50,90)
@@ -194,7 +189,7 @@ class SeekBar(wx.Panel, WorkspaceWidget):
             dc.DrawText(str(number), (number - width / 2), 12)
 
 
-    def on_mouse_event(self, event):
+    def _on_mouse_events(self, event):
         #todo: should catch drag to outside of the window        
         # todo: use EVT_CONTEXT_MENU, in tree browser and others too
         if event.RightDown():
@@ -266,13 +261,12 @@ class SeekBar(wx.Panel, WorkspaceWidget):
                 self.was_playing_before_mouse_click_but_then_paused_and_mouse_left = False
 
                 
-    def on_key_down(self, event):
+    def _on_key_down(self, event):
         self.frame.ProcessEvent(event)
 
         
-    def on_size(self, event):
+    def _on_size(self, event):
         self.Refresh()
-        if event is not None:
-            event.Skip()
+        event.Skip()
 
             

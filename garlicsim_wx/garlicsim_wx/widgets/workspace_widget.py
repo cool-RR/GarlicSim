@@ -10,6 +10,7 @@ See their documentation for more info.
 import wx
 
 import garlicsim_wx
+from garlicsim_wx.widgets.general_misc.cute_window import CuteWindow
 from garlicsim_wx.general_misc import wx_tools
 from garlicsim_wx.general_misc.third_party import aui
 from garlicsim.general_misc.third_party import abc
@@ -24,7 +25,11 @@ EVT_WORKSPACE_WIDGET_MENU_SELECT = wx.PyEventBinder(
 '''Event for when a workspace widget gets activated from the menu.'''
 
 
-class WorkspaceWidget(object):
+class WorkspaceWidgetType(type(CuteWindow), abc.ABCMeta):
+    '''The type of `WorkspaceWidget`.'''
+        
+    
+class WorkspaceWidget(CuteWindow):
     '''
     Abstract base class for workspace widgets.
     
@@ -32,10 +37,7 @@ class WorkspaceWidget(object):
     and is connected to a specific gui project.
     '''
 
-    # todo: How do I make it so all subclasses must inherit from `Window`?
-    
-    __metaclass__ = abc.ABCMeta
-    
+    __metaclass__ = WorkspaceWidgetType
 
     _WorkspaceWidget__name = None
     '''The display name of the widget. Default is class name.'''
@@ -54,31 +56,27 @@ class WorkspaceWidget(object):
         self.aui_manager = frame.aui_manager
         assert isinstance(self.aui_manager, aui.AuiManager)
         
-        
-        self.Bind(wx.EVT_KEY_DOWN, self.on_key_down)
-        self.__escape_key = wx_tools.Key(wx.WXK_ESCAPE)
-        
-        self.Bind(EVT_WORKSPACE_WIDGET_MENU_SELECT,
-                  self.on_workspace_widget_menu_select)
+        self.bind_event_handlers(WorkspaceWidget)
         
         
     @classmethod
     def get_uppercase_name(cls):
         '''Get the name of the widget's class in uppercase. Used for title.'''
         name = cls._WorkspaceWidget__name or cls.__name__
-        return string_tools.camelcase_to_spacecase(name).upper()
-
+        return string_tools.conversions.camelcase_to_spacecase(name).upper()
     
     def get_aui_pane_info(self):
         '''Get the AuiPaneInfo of this widget in the aui manager.'''
         return self.aui_manager.GetPane(self)
         
     
-    def on_key_down(self, event):
+    def _on_key_down(self, event):
         '''Handler for key down event.'''
         
-        if wx_tools.Key.get_from_key_event(event) == self.__escape_key and \
-           self.frame.FindFocus() is not self.frame:
+        key = wx_tools.keyboard.Key.get_from_key_event(event)
+        
+        if key == wx_tools.keyboard.Key(wx.WXK_ESCAPE) and \
+           not self.frame.has_focus():
                 
                 self.frame.SetFocus()
                 
@@ -97,7 +95,7 @@ class WorkspaceWidget(object):
         self.SetFocus()
             
             
-    def on_workspace_widget_menu_select(self, event):
+    def _on_workspace_widget_menu_select(self, event):
         '''Handle the event of a workspace widget being selected in menu.'''
         self.show()
     

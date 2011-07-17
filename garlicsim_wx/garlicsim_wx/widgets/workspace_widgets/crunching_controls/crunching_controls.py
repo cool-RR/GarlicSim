@@ -43,7 +43,7 @@ class CrunchingControls(wx.lib.scrolledpanel.ScrolledPanel, WorkspaceWidget):
                                                     style=wx.SUNKEN_BORDER)
         WorkspaceWidget.__init__(self, frame)
         
-        self.SetBackgroundColour(wx_tools.get_background_color())
+        self.set_good_background_color()
         
         self.SetupScrolling()
         
@@ -51,9 +51,6 @@ class CrunchingControls(wx.lib.scrolledpanel.ScrolledPanel, WorkspaceWidget):
         assert isinstance(self.gui_project, garlicsim_wx.GuiProject)
         # I put this assert mainly for better source assistance in Wing.
         # It may be removed.
-        
-        self.Bind(wx.EVT_SIZE, self.on_size)
-        self.Bind(wx.EVT_PAINT, self.on_paint)
         
         self.main_v_sizer = wx.BoxSizer(wx.VERTICAL)
         
@@ -80,6 +77,8 @@ class CrunchingControls(wx.lib.scrolledpanel.ScrolledPanel, WorkspaceWidget):
         self.main_v_sizer.Add(self.cruncher_controls, 0,
                               wx.EXPAND | wx.LEFT | wx.TOP | wx.RIGHT, 10)
         
+        self.bind_event_handlers(CrunchingControls)
+        
         self.autocrunch_controls.SetFocus()
         # We do this so when the user switches to this widget for the first
         # time, the focus will be on the autocrunch controls. I'm not sure this
@@ -87,15 +86,7 @@ class CrunchingControls(wx.lib.scrolledpanel.ScrolledPanel, WorkspaceWidget):
         # not just the local.
 
         
-    def on_size(self, event):
-        '''EVT_SIZE handler.'''
+    def _on_size(self, event):
         self.Refresh()
         event.Skip()
-    
         
-    def on_paint(self, event):
-        '''EVT_PAINT handler.'''
-        event.Skip()
-        
-
-    

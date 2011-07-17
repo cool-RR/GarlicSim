@@ -10,8 +10,10 @@ See its documentation for more details.
 import wx
 
 from garlicsim.general_misc.nifty_collections import OrderedDict
+from garlicsim_wx.general_misc import wx_tools
 from garlicsim_wx.widgets.general_misc.cute_dialog import CuteDialog
-from garlicsim_wx.widgets.general_misc.error_dialog import ErrorDialog
+from garlicsim_wx.widgets.general_misc.cute_static_text import CuteStaticText
+from garlicsim_wx.widgets.general_misc.cute_error_dialog import CuteErrorDialog
 
 import garlicsim
 import garlicsim_wx
@@ -35,18 +37,23 @@ class CruncherSelectionDialog(CuteDialog):
         
         self.main_v_sizer = wx.BoxSizer(wx.VERTICAL)
         
-        self.general_text = wx.StaticText(
+        self.general_text = CuteStaticText(
             self,
-            label=("Choose a cruncher type to be used when crunching the "
+            label=("C&hoose a cruncher type to be used when crunching the "
                    "simulation. Your simulation will use the same algorithm "
                    "regardless of which cruncher you'll choose; the choice of "
                    "cruncher will affect how and where that algorithm will be "
                    "run.")
         )
-        #self.general_text.SetSize((self.ClientSize[0] - 20, -1))
-        self.general_text.Wrap(self.ClientSize[0] - 20)
-                                  
-        self.general_text.Wrap(self.general_text.Size[0])
+        if wx_tools.is_gtk: # Circumventing a bug in GTK:
+            self.add_accelerators(
+                {(wx_tools.keyboard.Key('h', alt=True),
+                  wx_tools.keyboard.Key('H', alt=True)):
+                 self.general_text.Id}
+            )
+            self.Bind(wx.EVT_MENU,
+                      lambda event: self.cruncher_list_box.SetFocus(),
+                      source=self.general_text)
         
         self.main_v_sizer.Add(self.general_text, 0, wx.EXPAND | wx.ALL,
                               border=10)
@@ -74,6 +81,9 @@ class CruncherSelectionDialog(CuteDialog):
             choices=cruncher_titles.keys()
         )
         self.cruncher_list_box.SetMinSize((250, 100))
+        self.cruncher_list_box.SetHelpText(
+            'List of cruncher types from which you can choose.'
+        )
         
         self.cruncher_list_box.Select(
             cruncher_titles.values().index(
@@ -94,37 +104,30 @@ class CruncherSelectionDialog(CuteDialog):
         self.main_v_sizer.Add(self.dialog_button_sizer, 0,
                               wx.ALIGN_CENTER | wx.ALL, border=10)
         
-        self.ok_button = wx.Button(self, wx.ID_OK, 'Switch cruncher type')
+        self.ok_button = wx.Button(self, wx.ID_OK, '&Switch cruncher type')
         self.dialog_button_sizer.AddButton(self.ok_button)
         self.ok_button.SetDefault()
         self.dialog_button_sizer.SetAffirmativeButton(self.ok_button)
-        self.Bind(wx.EVT_BUTTON, self.on_ok, source=self.ok_button)
         
         self.cancel_button = wx.Button(self, wx.ID_CANCEL, 'Cancel')
         self.dialog_button_sizer.AddButton(self.cancel_button)
-        self.Bind(wx.EVT_BUTTON, self.on_cancel, source=self.cancel_button)
         self.dialog_button_sizer.Realize()
-        
-        
-        self.Bind(wx.EVT_LISTBOX, self.on_list_box_change,
-                  self.cruncher_list_box)
-        self.Bind(wx.EVT_LISTBOX_DCLICK, self.on_list_box_double_click,
-                  self.cruncher_list_box)
         
         self.SetSizer(self.main_v_sizer)
         self.Layout()
         self.general_text.Wrap(self.general_text.Size[0])
         self.main_v_sizer.Fit(self)
         
+        self.bind_event_handlers(CruncherSelectionDialog)
         self.update()
 
         
-    def on_ok(self, event):
+    def _on_ok_button(self, event):
         #event.Skip()
         self.try_to_change_cruncher_type_and_end_modal()
         
         
-    def on_list_box_double_click(self, event):
+    def _on_cruncher_list_box__listbox_dclick(self, event):
         event.Skip()
         self.try_to_change_cruncher_type_and_end_modal()
         
@@ -136,19 +139,17 @@ class CruncherSelectionDialog(CuteDialog):
             self.gui_project.cruncher_type_changed_emitter.emit()
             self.EndModal(wx.ID_OK)
         else: # Selected cruncher type is unavailable
-            error_dialog = ErrorDialog(
+            CuteErrorDialog.create_and_show_modal(
                 self,
                 '`%s` is not available.' % self.selected_cruncher_type.__name__
             )
-            error_dialog.ShowModal()
-            error_dialog.Destroy()
         
         
-    def on_cancel(self, event):
+    def _on_cancel_button(self, event):
         self.EndModal(wx.ID_CANCEL)
 
         
-    def on_list_box_change(self, event):
+    def _on_cruncher_list_box__listbox(self, event):
         self.update()
         
         
