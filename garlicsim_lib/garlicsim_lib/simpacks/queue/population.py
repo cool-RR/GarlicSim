@@ -18,7 +18,8 @@ from .client import Client
 
 class Population(identities.HasIdentity):
     '''A population which generates clients.'''
-    def __init__(self, event_set, facility, size=infinity, mean_arrival_time=1):
+    def __init__(self, event_set, facility, size=infinity,
+                 mean_arrival_time=1):
         '''
         Constructor.
         
