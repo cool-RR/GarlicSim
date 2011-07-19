@@ -36,8 +36,9 @@ def __check_prerequisites():
     
     modules = []
     
-    class MissingModule(Exception):
+    class MissingModule(ImportError):
         '''A required module is not found.'''
+         # Inherits from `ImportError` to satisfy PiCloud.
     
     def check_pkg_resources():
         try:
