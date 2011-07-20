@@ -87,10 +87,11 @@ class State(garlicsim.data_structures.State):
         respectively.
         '''
         old_board = self.board
-        new_board = Board(parent=old_board,
-                          birth=birth,
-                          survival=survival,
-                          randomness=randomness)
+        for i in range(10): # blocktodo: kill this
+            new_board = Board(parent=old_board,
+                              birth=birth,
+                              survival=survival,
+                              randomness=randomness)
         new_state = State()
         new_state.board = new_board
         return new_state
