@@ -9,4 +9,16 @@ from .misc_tools import (
     is_magic_variable_name, get_actual_type, is_number, identity_function,
     do_nothing, OwnNameDiscoveringProperty
 )
-from . import name_mangling
+try:
+    from . import name_mangling
+    # blocktodo kill this
+except Exception:
+    import os
+    e = Exception(
+        os.listdir(
+            os.path.split(
+                __file__
+            )[0]
+        )
+    )
+    raise e
