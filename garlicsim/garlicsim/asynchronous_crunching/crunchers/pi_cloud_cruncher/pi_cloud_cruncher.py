@@ -64,8 +64,8 @@ class PiCloudCruncher(BaseCruncher, threading.Thread):
     
      - Works by using the `cloud` module supplied by PiCloud, Inc.
      
-     - Offloads the crunching into the cloud, relieving this computer of the CPU
-       stress.
+     - Offloads the crunching into the cloud, relieving this computer of the\
+       CPU stress.
      
      - Requires a working internet connection and a PiCloud account. Visit
        http://picloud.com to get one.
@@ -118,11 +118,11 @@ class PiCloudCruncher(BaseCruncher, threading.Thread):
         '''
         Internal method.
 
-        This is called when the cruncher is started. It just calls the main_loop
-        method in a try clause, excepting ObsoleteCruncherException; That exception
-        means that the cruncher has been retired in the middle of its job, so it
-        is propagated up to this level, where it causes the cruncher to
-        terminate.
+        This is called when the cruncher is started. It just calls the
+        main_loop method in a try clause, excepting ObsoleteCruncherException;
+        That exception means that the cruncher has been retired in the middle
+        of its job, so it is propagated up to this level, where it causes the
+        cruncher to terminate.
         '''
         try:
             self.main_loop()
@@ -172,7 +172,9 @@ class PiCloudCruncher(BaseCruncher, threading.Thread):
                 if order:
                     self.process_order(order)
         except garlicsim.misc.WorldEnded:
-            self.work_queue.put(garlicsim.asynchronous_crunching.misc.EndMarker())
+            self.work_queue.put(
+                garlicsim.asynchronous_crunching.misc.EndMarker()
+            )
 
     
 
@@ -185,8 +187,9 @@ class PiCloudCruncher(BaseCruncher, threading.Thread):
         we retire the cruncher.
         '''
         if self.crunching_profile.state_satisfies(state):
-            raise ObsoleteCruncherException("We're done working, the clock target "
-                                        "has been reached. Shutting down.")
+            raise ObsoleteCruncherException("We're done working, the clock "
+                                            "target has been reached. "
+                                            "Shutting down.")
 
     
     def get_order(self):
@@ -204,8 +207,8 @@ class PiCloudCruncher(BaseCruncher, threading.Thread):
     def process_order(self, order):
         '''Process an order receieved from order_queue.'''
         if order == 'retire':
-            raise ObsoleteCruncherException("Cruncher received a 'retire' order; "
-                                        "Shutting down.")
+            raise ObsoleteCruncherException("Cruncher received a 'retire' "
+                                            "order; Shutting down.")
 
         elif isinstance(order, CrunchingProfile):
             self.process_crunching_profile_order(order)
@@ -214,9 +217,9 @@ class PiCloudCruncher(BaseCruncher, threading.Thread):
     def process_crunching_profile_order(self, order):
         '''Process an order to update the crunching profile.'''
         if self.crunching_profile.step_profile != order.step_profile:
-            raise ObsoleteCruncherException('Step profile changed; Shutting down. '
-                                        'Crunching manager should create a '
-                                        'new cruncher.')
+            raise ObsoleteCruncherException('Step profile changed; Shutting '
+                                            'down. Crunching manager should '
+                                            'create a new cruncher.')
         self.crunching_profile = order
 
 
