@@ -243,9 +243,10 @@ class PiCloudCruncher(BaseCruncher, threading.Thread):
         '''
         Return whether `ProcessCruncher` can be used with `simpack_grokker`. 
         blocktododoc
-        For `ProcessCruncher` to be usable, the `multiprocessing` module must be
-        installed. Assuming it's installed, `ProcessCruncher` can be used if and
-        only if the simpack is not history-dependent.
+        
+        For `ProcessCruncher` to be usable, the `multiprocessing` module must
+        be installed. Assuming it's installed, `ProcessCruncher` can be used if
+        and only if the simpack is not history-dependent.
         '''
         
         # blocktodo: check `cloud` availability
