@@ -32,7 +32,6 @@ class Personality(object):
         assert isinstance(persistent, Persistent)
         
         from . import human_names
-        human_name_list = human_names.get_name_list()
 
         color_resolution = 100
         
@@ -40,9 +39,9 @@ class Personality(object):
         
         (u, human_name_seed) = divmod(
             u,
-            len(human_name_list)
+            len(human_names.name_list)
         )
-        self.human_name = human_name_list[human_name_seed]
+        self.human_name = human_names.name_list[human_name_seed]
         '''A human name. (e.g. "Jeffrey".)'''
         
         color_seeds = []

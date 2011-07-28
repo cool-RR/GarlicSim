@@ -3,20 +3,6 @@
 
 '''Provides a list of human names as `name_list`blocktododoc.'''
 
-import pkg_resources
+from . import _name_list
 
-from garlicsim.general_misc import caching
-
-@caching.cache()
-def get_name_list():
-
-    (male_raw, female_raw) = \
-        [
-            pkg_resources.resource_string(__name__, file_name) for 
-            file_name in ['male.txt', 'female.txt']
-        ]
-    
-    
-    name_list = male_raw.split(':') + female_raw.split(':')
-    
-    return name_list
+name_list = _name_list.data.split('\n')

@@ -1,7 +1,7 @@
 ..
    Copyright 2009-2011 Ram Rachum. This work is licensed under a Creative
    Commons Attribution-ShareAlike 3.0 Unported License, with attribution to
-   "Ram Rachum at cool-rr.com" including link. The license may be obtained
+   "Ram Rachum at ram.rachum.com" including link. The license may be obtained
    at http://creativecommons.org/licenses/by-sa/3.0/
 
 .. _ref-simpack-api:
@@ -92,10 +92,52 @@ non-history-dependent ones.)
 Non-mandatory definitions
 =========================
 
+Metadata
+--------
+
+You may supply metadata about your simpack, including name, tags, description,
+version number and a preview image. This is helpful especially in the GUI, so
+users will know what your simpack is about before they start a simulation with
+it.
+
+This is how the metadata should be specified in the simpack's ``__init__.py``
+module::
+
+    '''
+    Simpack that does X, Y and Z.
+    
+    This is the description of your simpack. It's parsed from ReStructuredText,
+    so you may do stuff like *this* and `this` and **this**, and include `links
+    to websites <http://python.org>`_ or links to simpack tags, like
+    `cellular-automaton`_.
+    '''
+    
+    from .state import State    
+    
+    name = 'Name of the simpack'
+    
+    tags = ('physics', 'cellular-automata', 'or', 'any', 'other', 'tags')
+    
+    __version__ = '0.8.2'
+    
+
+If you want to include a preview image with your simpack, place it alongside
+the ``__init__.py`` file. It must be either a PNG, JPEG or GIF image, and it
+must be called either ``preview.png``, ``preview.jpg`` or ``preview.gif``. Keep
+in mind that the image will be displayed cropped centerwise in the GUI, and the
+display size will be approximately 255x360 pixels.
+
+One word of warning: Because of the special way that metadata is loaded from
+the ``__init__.py`` module, (namely module-tasting, which allows loading the
+metadata without importing the entire simpack,) try not to have too complex
+logic in your ``__init__.py`` module, aside from the metadata assignments and
+relative imports.
+
+
 State creation methods
 ----------------------
 
-You may define methods for creating new states objects. These should be made
+You may define methods for creating new state objects. These should be made
 inside the ``State`` class as ``staticmethod``\s.
 
 * ``def create_root(<optional defaultful arguments>):`` - Create a plain state,
