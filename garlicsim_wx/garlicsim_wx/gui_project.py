@@ -80,12 +80,12 @@ class GuiProject(object):
         ### If it's a new project, use `ProcessCruncher` if available: ########
         #                                                                     #
         
-        if (not project): # Note this is the project given as an argument
-            if (crunchers.ProcessCruncher in 
-                simpack_grokker.available_cruncher_types):
+        #if (not project): # Note this is the project given as an argument
+            #if (crunchers.ProcessCruncher in 
+                #simpack_grokker.available_cruncher_types):
                 
-                self.project.crunching_manager.cruncher_type = \
-                    crunchers.ProcessCruncher
+                #self.project.crunching_manager.cruncher_type = \
+                    #crunchers.ProcessCruncher	blocktodo uncomment this block
         #                                                                     #
         #######################################################################
             
