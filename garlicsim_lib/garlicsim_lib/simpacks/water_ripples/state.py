@@ -39,7 +39,6 @@ class State(garlicsim.data_structures.State):
                 neighbors.append((value, weight))
                 
             values, weights = zip(*neighbors)
-            total_weight = sum(weights)
             expected_height = numpy.average(values, weights=weights)
                 
             new_acceleration = 0.2 * (expected_height - self.heights[i, j])
