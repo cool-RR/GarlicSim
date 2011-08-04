@@ -13,6 +13,7 @@ from garlicsim_wx.general_misc import wx_tools
 from garlicsim_wx.widgets.general_misc.cute_panel import CutePanel
 import garlicsim_wx
 
+
 @caching.cache(max_size=500)
 def _draw_bitmap(state_viewer, state, client_width, client_length):
     
@@ -24,7 +25,7 @@ def _draw_bitmap(state_viewer, state, client_width, client_length):
     dc.SetPen(wx.TRANSPARENT_PEN)
     
     if state is None:
-        return
+        return bitmap
     
     rectangle_width = client_width / state.heights.shape[0]
     rectangle_length = client_length / state.heights.shape[1]
@@ -80,8 +81,6 @@ class StateViewer(CutePanel,
         self.gui_project.active_node_changed_emitter.add_output(
             lambda: self.set_state(self.gui_project.get_active_state())
         )
-
-        self.redraw_needed_flag = True
         
         self.bind_event_handlers(StateViewer)
         
@@ -103,7 +102,6 @@ class StateViewer(CutePanel,
     def set_state(self, state):
         '''Set the state to be displayed.'''
         self.state = state
-        self.redraw_needed_flag = True
         self.Refresh()
 
     
@@ -113,23 +111,17 @@ class StateViewer(CutePanel,
     def _on_paint(self, event):
         
         event.Skip()
-        
-        if self.redraw_needed_flag is True:
-            self._buffer_bitmap = \
-                               _draw_bitmap(self, self.state, *self.ClientSize)
-            self.redraw_needed_flag = False
                 
         dc = wx.BufferedPaintDC(self)
         
         dc.SetBackground(wx_tools.colors.get_background_brush())
         dc.Clear()
         
-        dc.DrawBitmapPoint(self._buffer_bitmap,
+        dc.DrawBitmapPoint(_draw_bitmap(self, self.state, *self.ClientSize),
                            self.ClientAreaOrigin)
         
                         
     def _on_size(self, event):
-        self.redraw_needed_flag = True
         self.Refresh()
         if event is not None:
             event.Skip()
