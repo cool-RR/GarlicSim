@@ -4,7 +4,7 @@ import numpy.random
 import garlicsim.data_structures
 from garlicsim.general_misc import cute_iter_tools
 
-SIZE = 200 # blocktodo: kill
+SIZE = 50 # blocktodo: kill
 
 # blocktodo: should probably have acceleration changing from nearby water.
 
