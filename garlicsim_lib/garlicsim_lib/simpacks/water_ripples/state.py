@@ -4,7 +4,7 @@ import numpy.random
 import garlicsim.data_structures
 from garlicsim.general_misc import cute_iter_tools
 
-SIZE = 50 # blocktodo: kill
+SIZE = 25 # blocktodo: kill
 
 # blocktodo: should probably have acceleration changing from nearby water.
 
@@ -39,10 +39,9 @@ class State(garlicsim.data_structures.State):
                 neighbors.append((value, weight))
                 
             values, weights = zip(*neighbors)
-            total_weight = sum(weights)
             expected_height = numpy.average(values, weights=weights)
                 
-            new_acceleration = 0.2 * (expected_height - self.heights[i, j])**2
+            new_acceleration = 0.2 * (expected_height - self.heights[i, j])
             if new_acceleration in (numpy.inf, -numpy.inf, numpy.nan):
                 raise garlicsim.misc.WorldEnded
                 1/0
