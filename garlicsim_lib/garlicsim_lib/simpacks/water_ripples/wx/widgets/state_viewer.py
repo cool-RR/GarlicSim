@@ -14,8 +14,11 @@ from garlicsim_wx.widgets.general_misc.cute_panel import CutePanel
 import garlicsim_wx
 
 
-@caching.cache(max_size=500)
+#@caching.cache(max_size=500)
 def _draw_bitmap(state_viewer, state, client_width, client_length):
+    
+    #blocktodo: it seems that this bitmap caching causes both wing and wx to
+    #crash.
     
     client_width, client_length = state_viewer.ClientSize
     bitmap = wx.EmptyBitmap(client_width, client_length)
