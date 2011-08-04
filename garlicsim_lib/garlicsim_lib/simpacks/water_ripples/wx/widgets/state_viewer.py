@@ -23,7 +23,7 @@ class StateViewer(CutePanel,
         
         self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM)
 
-        self.state
+        self.state = None
         
         self._buffer_bitmap = wx.EmptyBitmap(1, 1)
         
@@ -74,12 +74,12 @@ class StateViewer(CutePanel,
             return
         
         rectangle_width = width / state.heights.shape[0]
-        rectangle_length = height / state.heights.shape[1]
+        rectangle_length = length / state.heights.shape[1]
                 
         rectangles = []
         brushes = []
         
-        for x, y in cute_iter_tools.product(map(xrange, state.heights.shape)):
+        for x, y in cute_iter_tools.product(*map(xrange, state.heights.shape)):
             
             ### Calculating rectangle coordinates: ############################
             #                                                                 #
@@ -105,7 +105,7 @@ class StateViewer(CutePanel,
             ### Finished calculating color for brush. #########################
 
 
-        dc.DrawRectangleList(rectangles, transparent_pen, brushes)
+        dc.DrawRectangleList(rectangles, wx.TRANSPARENT_PEN, brushes)
 
     
     ### Event handlers: #######################################################

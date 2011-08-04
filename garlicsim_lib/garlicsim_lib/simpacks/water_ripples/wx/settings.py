@@ -1,12 +1,12 @@
-# from .widgets import state_viewer as _
+from .widgets import state_viewer as _
 # from .widgets import state_creation_dialog as _
-# from . import widgets
+from . import widgets
 
 
 ########### *All* of the settings in this module are optional. ################
 
 
-# BIG_WORKSPACE_WIDGETS = [widgets.state_viewer.StateViewer]
+BIG_WORKSPACE_WIDGETS = [widgets.state_viewer.StateViewer]
 
 # Widgets to show in the middle of the frame. These must be subclasses of
 # `garlicsim_wx.widgets.workspace_widget.WorkspaceWidget`.
