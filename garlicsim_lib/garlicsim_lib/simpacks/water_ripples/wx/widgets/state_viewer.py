@@ -8,10 +8,60 @@ from __future__ import division
 
 import wx
 from garlicsim.general_misc import cute_iter_tools
+from garlicsim.general_misc import caching
 from garlicsim_wx.general_misc import wx_tools
 from garlicsim_wx.widgets.general_misc.cute_panel import CutePanel
 import garlicsim_wx
 
+@caching.cache(max_size=500)
+def _draw_bitmap(state_viewer, state, client_width, client_length):
+    
+    client_width, client_length = state_viewer.ClientSize
+    bitmap = wx.EmptyBitmap(client_width, client_length)
+    
+    dc = wx.MemoryDC(bitmap)
+    
+    dc.SetPen(wx.TRANSPARENT_PEN)
+    
+    if state is None:
+        return
+    
+    rectangle_width = client_width / state.heights.shape[0]
+    rectangle_length = client_length / state.heights.shape[1]
+            
+    rectangles = []
+    brushes = []
+    
+    for x, y in cute_iter_tools.product(*map(xrange, state.heights.shape)):
+        
+        ### Calculating rectangle coordinates: ################################
+        #                                                                     #
+        
+        rectangles.append([rectangle_width * x,
+                           rectangle_length * y,
+                           rectangle_width,
+                           rectangle_length])
+        #                                                                     #
+        ### Finished calculating rectangle coordinates. #######################
+        
+        ### Calculating color for brush: ######################################
+        #                                                                     #
+        height = state.heights[x, y]
+        truncated_height = \
+                         1 if height > 1 else -1 if height < -1 else height
+        big_luminosity = 128 + (truncated_height * 127)
+        brush = wx.Brush(wx.Color(big_luminosity,
+                                  big_luminosity,
+                                  big_luminosity))
+        brushes.append(brush)
+        #                                                                     #
+        ### Finished calculating color for brush. #############################
+
+    dc.DrawRectangleList(rectangles, wx.TRANSPARENT_PEN, brushes)
+    
+    return bitmap
+
+    
 
 class StateViewer(CutePanel,
                   garlicsim_wx.widgets.WorkspaceWidget):
@@ -56,57 +106,6 @@ class StateViewer(CutePanel,
         self.redraw_needed_flag = True
         self.Refresh()
 
-        
-    def _draw_buffer_bitmap(self):
-        '''Draw the buffer bitmap, which `on_paint` will draw to the screen.'''
-        
-        state = self.state
-        
-        width, length = self.GetClientSize()
-        self._buffer_bitmap = wx.EmptyBitmap(width, length)
-        
-        dc = wx.MemoryDC(self._buffer_bitmap)
-        
-        
-        dc.SetPen(wx.TRANSPARENT_PEN)
-        
-        if state is None:
-            return
-        
-        rectangle_width = width / state.heights.shape[0]
-        rectangle_length = length / state.heights.shape[1]
-                
-        rectangles = []
-        brushes = []
-        
-        for x, y in cute_iter_tools.product(*map(xrange, state.heights.shape)):
-            
-            ### Calculating rectangle coordinates: ############################
-            #                                                                 #
-            
-            rectangles.append([rectangle_width * x,
-                               rectangle_length * y,
-                               rectangle_width,
-                               rectangle_length])
-            #                                                                 #
-            ### Finished calculating rectangle coordinates. ###################
-            
-            ### Calculating color for brush: ##################################
-            #                                                                 #
-            height = state.heights[x, y]
-            truncated_height = \
-                             1 if height > 1 else -1 if height < -1 else height
-            big_luminosity = 128 + (truncated_height * 127)
-            brush = wx.Brush(wx.Color(big_luminosity,
-                                      big_luminosity,
-                                      big_luminosity))
-            brushes.append(brush)
-            #                                                                 #
-            ### Finished calculating color for brush. #########################
-
-
-        dc.DrawRectangleList(rectangles, wx.TRANSPARENT_PEN, brushes)
-
     
     ### Event handlers: #######################################################
     #                                                                         #
@@ -116,7 +115,8 @@ class StateViewer(CutePanel,
         event.Skip()
         
         if self.redraw_needed_flag is True:
-            self._draw_buffer_bitmap()
+            self._buffer_bitmap = \
+                               _draw_bitmap(self, self.state, *self.ClientSize)
             self.redraw_needed_flag = False
                 
         dc = wx.BufferedPaintDC(self)
