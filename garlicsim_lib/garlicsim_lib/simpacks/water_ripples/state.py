@@ -27,29 +27,29 @@ class State(garlicsim.data_structures.State):
         new_velocities = numpy.zeros((width, length))
         new_heights = numpy.zeros((width, length))
         
-        for i, j in cute_iter_tools.product(xrange(1, width - 1),
-                                            xrange(1, length - 1)):
+        for (x, y), height in numpy.ndenumerate(self.heights):
+            
             neighbors = []
-            for ii, jj in cute_iter_tools.product((-1, 0, -1), (-1, 0, -1)):
-                if ii == jj == 0:
+            for i, j in cute_iter_tools.product((-1, 0, -1), (-1, 0, -1)):
+                if i == j == 0:
                     continue
-                distance = (ii**2 + jj**2) ** 0.5
+                distance = (i**2 + j**2) ** 0.5
                 weight = 1 / distance
-                value = self.heights[i + ii, j + jj]
+                value = self.heights[x + i, y + j]
                 neighbors.append((value, weight))
                 
             values, weights = zip(*neighbors)
             expected_height = numpy.average(values, weights=weights)
                 
-            new_acceleration = 0.02 * (expected_height - self.heights[i, j])
+            new_acceleration = 0.02 * (expected_height - height)
             if new_acceleration in (numpy.inf, -numpy.inf, numpy.nan):
                 raise garlicsim.misc.WorldEnded
-            new_velocity = self.velocities[i, j] + t * new_acceleration
-            new_height = self.heights[i, j] + t * new_velocity
+            new_velocity = self.velocities[x, y] + t * new_acceleration
+            new_height = self.heights[x, y] + t * new_velocity
             
-            new_accelerations[i, j] = new_acceleration
-            new_velocities[i, j] = new_velocity
-            new_heights[i, j] = new_height
+            new_accelerations[x, y] = new_acceleration
+            new_velocities[x, y] = new_velocity
+            new_heights[x, y] = new_height
             
                 
         return State(new_heights,
