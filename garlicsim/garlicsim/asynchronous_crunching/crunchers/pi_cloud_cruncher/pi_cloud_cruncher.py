@@ -10,6 +10,7 @@ import threading
 import time
 
 from garlicsim.general_misc import import_tools
+from garlicsim.general_misc import sys_tools
 from garlicsim.general_misc import string_tools
 from garlicsim.general_misc import cute_profile
 from garlicsim.general_misc.reasoned_bool import ReasonedBool
@@ -256,21 +257,21 @@ class PiCloudCruncher(BaseCruncher, threading.Thread):
             return ReasonedBool(
                 False,
                 "`PiCloudCruncher` does not support history-dependent "
-                "yet."
+                "simulations yet."
             )
         
-        elif not sys:
+        elif sys_tools.is_pypy:
             return ReasonedBool(
                 False,
-                "`PiCloudCruncher` can't be used until you install the "
-                " `cloud` module from http://pypi.python.org/pypi/cloud"
+                "`PiCloudCruncher` can't be used on PyPy, which you are "
+                "currently running on. It can only be  used on CPython."
             )
         
         elif not import_tools.exists('cloud'):
             return ReasonedBool(
                 False,
                 "`PiCloudCruncher` can't be used until you install the "
-                " `cloud` module from http://pypi.python.org/pypi/cloud"
+                "`cloud` module from http://pypi.python.org/pypi/cloud"
             )
         
         else:
