@@ -252,13 +252,25 @@ class PiCloudCruncher(BaseCruncher, threading.Thread):
         and only if the simpack is not history-dependent.
         '''
         
-        # blocktodo: check `cloud` availability
-        
         if simpack_grokker.history_dependent:
             return ReasonedBool(
                 False,
-                "blocktododoc `ProcessCruncher` can't be used in history-dependent "
-                "simulations because processes don't share memory."
+                "`PiCloudCruncher` does not support history-dependent "
+                "yet."
+            )
+        
+        elif not sys:
+            return ReasonedBool(
+                False,
+                "`PiCloudCruncher` can't be used until you install the "
+                " `cloud` module from http://pypi.python.org/pypi/cloud"
+            )
+        
+        elif not import_tools.exists('cloud'):
+            return ReasonedBool(
+                False,
+                "`PiCloudCruncher` can't be used until you install the "
+                " `cloud` module from http://pypi.python.org/pypi/cloud"
             )
         
         else:
