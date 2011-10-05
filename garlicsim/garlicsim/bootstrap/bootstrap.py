@@ -22,6 +22,7 @@ if sys.version_info[1] <= 4:
 
 
 frozen = getattr(sys, 'frozen', None)
+is_pypy = ('__pypy__' in sys.builtin_module_names)
 
 
 def __check_prerequisites():
@@ -70,7 +71,7 @@ def __check_prerequisites():
             return []
         
     def check_pywin32():
-        if not sys.platform == 'win32':
+        if not sys.platform == 'win32' or is_pypy: # todo: should check CPython
             return []
         try:
             import win32api
@@ -79,8 +80,9 @@ def __check_prerequisites():
         except ImportError:
             raise MissingModule(
                 "`pywin32` is required, but it's not currently installed on "
-                "your system. Please install it according to the instructions "
-                "here: http://sourceforge.net/projects/pywin32/files/pywin32/"
+                "your system. Please downloading it from here: "
+                "http://sourceforge.net/projects/pywin32/files/pywin32/ and "
+                "install it."
             )
         else: 
             return [win32api, win32process, win32com]
