@@ -45,7 +45,40 @@ import sys
 import imp
 import types
 import glob
+import stat
 
+original_stdout = sys.stdout
+def fuck_print(string):
+    original_stdout.write('%s\n' % string)
+    original_stdout.flush()
+sys.fuck_print = fuck_print
+
+#def tracer(*args, **kwargs):
+    #tracer.count += 1
+    #if tracer.count >= 10000000:
+        #fuck_print(str((args, kwargs)))
+    #return tracer
+#tracer.count = 0
+#sys.settrace(tracer)
+
+def isdir(s):
+    """Return true if the pathname refers to an existing directory."""
+    sys.fuck_print('KKKKKKKKKKKKKKKKKK')
+    try:
+        try:
+            sys.fuck_print('kkkkkkkkkkkkkkkkkk')
+            sys.fuck_print(s)
+            try:
+                st = os.stat(s)
+            finally:
+                sys.fuck_print('llllllllllllllllll')
+        except os.error:
+            return False
+        return stat.S_ISDIR(st.st_mode)
+    finally:
+        sys.fuck_print('LLLLLLLLLLLLLLLLLL')
+
+os.path.isdir = isdir
 
 frozen = getattr(sys, 'frozen', None)
 is_pypy = ('__pypy__' in sys.builtin_module_names)
@@ -213,6 +246,7 @@ def loadTestsFromDir(self, path):
     and is expected to be executed before the next file is
     examined.
     """
+    sys.fuck_print('SSSSSSSSSSSSSSSSSSSSSSSSSSS')
     from nose.loader import (log, add_path, op_abspath, op_isfile, op_isdir,
                              Failure, remove_path, sort_list, regex_last_key,
                              op_join, ispackage)
@@ -220,11 +254,16 @@ def loadTestsFromDir(self, path):
     log.debug("load from dir %s", path)
     plugins = self.config.plugins
     plugins.beforeDirectory(path)
+    
     if self.config.addPaths:
+        
+        sys.fuck_print(str((path)))
         paths_added = add_path(path, self.config)
+
 
     entries = os.listdir(path)
     sort_list(entries, regex_last_key(self.config.testMatch))
+    
     for entry in entries:
         # this hard-coded initial-dot test will be removed:
         # http://code.google.com/p/python-nose/issues/detail?id=82
@@ -251,33 +290,53 @@ def loadTestsFromDir(self, path):
                 ### Identifying Python files: #################################
                 #                                                             #
                 if '.py' in entry[-4:]:
-                    yield self.loadTestsFromName(
+                    xxx = self.loadTestsFromName(
                         entry_path, discovered=True)
+                    
+                    sys.fuck_print('YYYYYYYYYYYYYYYYYYYYYYYYYYY')
+                    yield xxx
+                    sys.fuck_print('CCCCCCCCCCCCCCCCCCCCCCCCCCC')
                 else:
-                    yield self.loadTestsFromFile(entry_path)
+                    xxx = self.loadTestsFromFile(entry_path)
+                    sys.fuck_print('YYYYYYYYYYYYYYYYYYYYYYYYYYY')
+                    yield xxx
+                    sys.fuck_print('CCCCCCCCCCCCCCCCCCCCCCCCCCC')
                 #                                                             #
                 ### Finished identifying Python files. ########################
                 plugins.afterContext()
             elif is_package:
                 # Load the entry as a package: given the full path,
                 # loadTestsFromName() will figure it out
-                yield self.loadTestsFromName(
+                xxx = self.loadTestsFromName(
                     entry_path, discovered=True)
+                
+                sys.fuck_print('YYYYYYYYYYYYYYYYYYYYYYYYYYY')
+                yield xxx
+                sys.fuck_print('CCCCCCCCCCCCCCCCCCCCCCCCCCC')
             else:
                 # Another test dir in this one: recurse lazily
-                yield self.suiteClass(
+                xxx = self.suiteClass(
                     lambda: self.loadTestsFromDir(entry_path))
+                sys.fuck_print('YYYYYYYYYYYYYYYYYYYYYYYYYYY')
+                yield xxx
+                sys.fuck_print('CCCCCCCCCCCCCCCCCCCCCCCCCCC')
     tests = []
     for test in plugins.loadTestsFromDir(path):
         tests.append(test)
     # TODO: is this try/except needed?
     try:
         if tests:
-            yield self.suiteClass(tests)
+            xxx = self.suiteClass(tests)
+            sys.fuck_print('YYYYYYYYYYYYYYYYYYYYYYYYYYY')
+            yield xxx
+            sys.fuck_print('CCCCCCCCCCCCCCCCCCCCCCCCCCC')
     except (KeyboardInterrupt, SystemExit):
         raise
     except:
-        yield self.suiteClass([Failure(*sys.exc_info())])
+        xxx = self.suiteClass([Failure(*sys.exc_info())])
+        sys.fuck_print('YYYYYYYYYYYYYYYYYYYYYYYYYYY')
+        yield xxx
+        sys.fuck_print('CCCCCCCCCCCCCCCCCCCCCCCCCCC')
     
     # pop paths
     if self.config.addPaths:
@@ -448,6 +507,7 @@ if __name__ == '__main__':
         #######################################################################
         # This is the heavy line, which actually causes Nose to start running
         # tests:
+        
         TestProgram(argv=argv)
         #######################################################################
     
