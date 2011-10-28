@@ -1,6 +1,6 @@
 import itertools
 import math
-import operator_module
+import operator as operator_module
 import abc
 
 from garlicsim.general_misc import cute_iter_tools
