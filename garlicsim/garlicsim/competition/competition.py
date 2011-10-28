@@ -10,11 +10,13 @@ from garlicsim.general_misc import nifty_collections
 
 big_map = {}
 
-
+class AbstractCachedType(caching.CachedType, abc.ABCMeta):
+    pass
+        
 
 class Combination(object):
     ''' '''
-    __metaclass__ = abc.ABCMeta
+    __metaclass__ = AbstractCachedType
     
     @abc.abstractmethod
     def __int__(self):
@@ -22,6 +24,10 @@ class Combination(object):
     
     @abc.abstractproperty
     def level(self):
+        ''' '''
+    
+    @abc.abstractmethod
+    def get_child_sequences_for_sequence(self, sequence):
         ''' '''
     
 
@@ -37,6 +43,24 @@ class BinaryCombination(Combination):
     def __int__(self):
         ''' '''
         return self.operation(int(self.left_member), int(self.right_member))
+    
+    @caching.cache
+    @nifty_collections.LazyTuple.factory
+    @classmethod
+    def get_child_sequences_for_sequence(cls, sequence):
+        ''' '''
+        if len(sequence) <= 1:
+            raise StopIteration
+        for i in range(len(sequence) - 1):
+            left_segment = sequence.members[:i]
+            our_pair = sequence.members[i:i+2]
+            right_segment = sequence.members[i+2:]
+            child_sequence = Sequence(
+                left_segment + cls(*our_pair) + right_segment
+            )
+            yield child_sequence
+        
+        
     
     @caching.CachedProperty
     def level(self):
@@ -59,6 +83,33 @@ class UnaryCombination(Combination):
         ''' '''
         return self.operation(int(self.member))
     
+    @caching.CachedProperty
+    def has_maximal_bloat(self):
+        ''' '''
+        return isinstance(self, UnaryCombination) and \
+               isinstance(self.member, UnaryCombination) and \
+               isinstance(self.member.member, UnaryCombination)
+    
+    
+    @caching.cache
+    @nifty_collections.LazyTuple.factory
+    @classmethod
+    def get_child_sequences_for_sequence(cls, sequence):
+        ''' '''
+        if len(sequence) == 0:
+            raise StopIteration
+        for i in range(len(sequence)):
+            left_segment = sequence.members[:i]
+            our_member = sequence.members[i]
+            right_segment = sequence.members[i+1:]
+            if isinstance(our_member, UnaryCombination):
+                if our_member.has_maximal_bloat:
+                    continue
+            child_sequence = Sequence(
+                left_segment + cls(our_member) + right_segment
+            )
+            yield child_sequence
+    
 
 class Add(BinaryCombination): operation = operator_module.add
 class Sub(BinaryCombination): operation = operator_module.sub
@@ -69,16 +120,35 @@ class Fac(UnaryCombination): operation = math.factorial
 
 operators = (Add, Sub, Mul, Div, Exp, Fac)        
         
+        
 class Sequence(object):
     ''' '''
     def __init__(self, members=()):
         self.members = members
-        
+   
+    def __len__(self):
+        return len(self.members)
+    
+    @caching.CachedProperty
     @nifty_collections.LazyTuple.factory
     def child_sequences(self):
-        for operator_module in operators
-        
+        for operator in operators:
+            for child_sequence in \
+                               operator.get_child_sequences_for_sequence(self):
+                yield child_sequence
+    
+            
+    @caching.CachedProperty
+    def value(self):
+        if len(self.members) != 1:
+            return None
+        (member,) = self.members
+        return int(member)
 
+
+    @caching.CachedProperty
+    def has_value(self):
+        return self.value is not None
 
         
 
