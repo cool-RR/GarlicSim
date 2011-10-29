@@ -9,19 +9,20 @@ from garlicsim.general_misc import nifty_collections
 
 
 big_map = {}
+_maximum_level_completed = 2
 
 def _get_level(x):
     ''' '''
     return x if isinstance(x, int) else x.level
     
 
-class AbstractCachedType(caching.CachedType, abc.ABCMeta):
-    pass
+#class AbstractCachedType(caching.CachedType, abc.ABCMeta):
+    #pass
         
 
 class Combination(object):
     ''' '''
-    __metaclass__ = AbstractCachedType
+    __metaclass__ = abc.ABCMeta
     
     @abc.abstractmethod
     def __int__(self):
@@ -50,11 +51,15 @@ class BinaryCombination(Combination):
     
     def __int__(self):
         ''' '''
-        return self.operation(int(self.left_member), int(self.right_member))
+        raw = self.operation(int(self.left_member), int(self.right_member))
+        if int(raw) == raw:
+            return int(raw)
+        else:
+            raise ValueError
     
+    @classmethod    
     @caching.cache()
     @nifty_collections.LazyTuple.factory
-    @classmethod
     def get_child_sequences_for_sequence(cls, sequence):
         ''' '''
         if len(sequence) <= 1:
@@ -64,7 +69,7 @@ class BinaryCombination(Combination):
             our_pair = sequence.members[i:i+2]
             right_segment = sequence.members[i+2:]
             child_sequence = Sequence(
-                left_segment + cls(*our_pair) + right_segment
+                left_segment + (cls(*our_pair),) + right_segment
             )
             yield child_sequence
         
@@ -93,19 +98,22 @@ class UnaryCombination(Combination):
     
     def __int__(self):
         ''' '''
-        return self.operation(int(self.member))
+        if int(self.member) > 20:
+            raise ValueError
+        else:
+            return int(self.operation(int(self.member)))
     
     @caching.CachedProperty
     def has_maximal_bloat(self):
         ''' '''
-        return isinstance(self, UnaryCombination) and \
-               isinstance(self.member, UnaryCombination) and \
-               isinstance(self.member.member, UnaryCombination)
+        return isinstance(self, UnaryCombination)# and \
+               #isinstance(self.member, UnaryCombination)# and \
+               #isinstance(self.member.member, UnaryCombination)
     
     
-    @caching.cache
-    @nifty_collections.LazyTuple.factory
     @classmethod
+    @caching.cache()
+    @nifty_collections.LazyTuple.factory
     def get_child_sequences_for_sequence(cls, sequence):
         ''' '''
         if len(sequence) == 0:
@@ -118,7 +126,7 @@ class UnaryCombination(Combination):
                 if our_member.has_maximal_bloat:
                     continue
             child_sequence = Sequence(
-                left_segment + cls(our_member) + right_segment
+                left_segment + (cls(our_member),) + right_segment
             )
             yield child_sequence
     
@@ -149,20 +157,27 @@ class Div(BinaryCombination):
     operation = operator_module.floordiv
     operator_string = '//'
     
-class Exp(BinaryCombination):
+class Pow(BinaryCombination):
     operation = operator_module.pow
     operator_string = '^'
+    def __int__(self):
+        ''' '''
+        if int(self.right_member) > 20:
+            raise ValueError
+        else:
+            return super(Pow, self).__int__()
     
 class Fac(UnaryCombination):
     operation = math.factorial
     operator_string = '!'
 
-operators = (Add, Sub, Mul, Div, Exp, Fac)        
+operators = (Add, Sub, Mul, Div, Pow, Fac)
         
         
 class Sequence(object):
     ''' '''
     def __init__(self, members=()):
+        assert isinstance(members, tuple)        
         self.members = members
    
     def __len__(self):
@@ -192,32 +207,45 @@ class Sequence(object):
 
     @caching.CachedProperty
     def has_value(self):
-        return self.value is not None
+        try:
+            return self.value is not None
+        except (ZeroDivisionError, ValueError):
+            return False
     
     def __repr__(self):
         #if len(self.members) != 1:
             #raise NotImplementedError
-        return 'Sequence(%s)' % self.members
+        return 'Sequence(%s)' % (self.members,)
 
         
+def iterate_finished_sequences():
+    for i in itertools.count(2):
+        root_sequence = Sequence(tuple(range(1, i)))
+        sequences_to_try = [root_sequence]
+        while sequences_to_try:
+            sequence = sequences_to_try.pop(0)
+            if sequence.has_value:
+                yield sequence
+            else:
+                sequences_to_try.extend(sequence.child_sequences)
+    
+finished_sequences_iterator = iterate_finished_sequences()
+
 
 def solve(n):
     ''' '''
-    for i in itertools.count(2):
-        root_sequence = Sequence(range(1, i))
-        sequences_to_try = [root_sequence]
-        while sequences_to_try:
-            sequence = sequences_to_try.pop()
-            if sequence.has_value:
-                possible_contender = big_map.get(sequence.value)
-                if not possible_contender or possible_contender.level > \
-                                                        sequences_to_try.level:
-                    big_map[value] = sequence
-                    if value == n:
-                        print('Found solution for %s:\n    %s' % (n, sequence))
-                        return sequence
+    if n in big_map:
+        return big_map[n]
+    for sequence in finished_sequences_iterator:
+        possible_contender = big_map.get(sequence.value)
+        if not possible_contender or possible_contender.level > sequence.level:
+            big_map[sequence.value] = sequence
+        if sequence.value == n:
+            return sequence
                 
                     
         
-solve(10)
+for i in itertools.count(2):
+    print('Found solution for %s:\n    %s' % (i, solve(i)))
+    
 1/0
