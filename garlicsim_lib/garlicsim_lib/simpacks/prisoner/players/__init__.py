@@ -10,6 +10,6 @@ They are all subclasses of `Player`.
 from .angel import Angel
 from .devil import Devil
 from .tit_for_tat import TitForTat
+from .chen import Chen
 
-
-player_types_list = [Angel, Devil, TitForTat]
+player_types_list = [Angel, Devil, TitForTat, Chen]
