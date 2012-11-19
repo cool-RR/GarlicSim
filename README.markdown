@@ -1,8 +1,3 @@
-# Brief Video Introduction #
-
-[![](http://garlicsim.org/images/video_thumbnail.jpg)](http://garlicsim.org/brief_introduction.html)
-
-
 # Documentation #
 
 [Main documentation site](http://docs.garlicsim.org)
@@ -33,12 +28,6 @@ Additionally, GarlicSim will eventually be shipped with a standard library of si
 For a more thorough introduction to how GarlicSim works, check out the [documentation](http://docs.garlicsim.org).
 
 GarlicSim itself is written in pure Python. The speed of simulations is mostly dependent on the simpack's performance - So it is possible to use C code in a simpack to make things faster.
-
--------
-
-Current screenshot, showing the [Game of Life](http://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) simulation package shipped with the program:
-
-![](http://garlicsim.org/images/screenshot.png)
 
 
 # Mailing lists #
