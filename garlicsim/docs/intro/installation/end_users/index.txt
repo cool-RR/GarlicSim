@@ -16,12 +16,10 @@ way. (Currently Windows only.)
 
 .. image:: /images/windows_installer.png
     :align: left
-    :target: http://github.com/downloads/cool-RR/GarlicSim/GarlicSim-0.6.3.exe
+    :target: https://sourceforge.net/projects/garlicsim/files/GarlicSim-0.6.3.exe/download
 
 `Download end-user Windows GarlicSim 0.6.3 installer
-<http://github.com/downloads/cool-RR/GarlicSim/GarlicSim-0.6.3.exe>`_
+<https://sourceforge.net/projects/garlicsim/files/GarlicSim-0.6.3.exe/download>`_
 
 This installer will give you :mod:`garlicsim`, :mod:`garlicsim_lib` and
 :mod:`garlicsim_wx`.
-
-End-user installers for Mac and Linux will become available in the future.
