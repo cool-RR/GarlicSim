@@ -1,3 +1,9 @@
+# Abandoned! #
+
+GarlicSim used to be an ambitious open-source project, but after 2.5 years of work and little public interest it was abandoned. It's no longer being actively developed.
+
+The full story: (http://blog.ram.rachum.com/post/24682447796/garlicsim-is-dead-long-live-python-toolbox)
+
 # Documentation #
 
 [Main documentation site](http://docs.garlicsim.org)
@@ -49,8 +55,3 @@ They are all distributed under the **LGPL2.1 license**.
 GarlicSim supports Python versions 2.5 and up, not including Python 3.x.
 
 There is a [separate fork of GarlicSim](http://github.com/cool-RR/GarlicSim-for-Python-3.x) that supports Python 3.x. Take note though that it does not contain a GUI, because wxPython does not support Python 3.x.
-
-
-# Current state #
-
-GarlicSim is at version 0.6.3, which is an alpha release. At this experimental stage of the project, backward compatibility will _not_ be maintained. However, I will be available to assist in issues related to backward compatibility.
