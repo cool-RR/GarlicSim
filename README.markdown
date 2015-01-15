@@ -55,3 +55,5 @@ They are all distributed under the **LGPL2.1 license**.
 GarlicSim supports Python versions 2.5 and up, not including Python 3.x.
 
 There is a [separate fork of GarlicSim](http://github.com/cool-RR/GarlicSim-for-Python-3.x) that supports Python 3.x. Take note though that it does not contain a GUI, because wxPython does not support Python 3.x.
+
+GarlicSim was created by Ram Rachum. I also provide [freelance Django/Python development services](https://chipmunkdev.com).
